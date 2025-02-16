@@ -1,15 +1,50 @@
-# ME44312---Machine-Learning
+🚀 GitHub Basics for Our Team
 
-For those that never worked with GitHub:
+1. Clone the Repository (Copy it to Your Computer)
 
-	1.	Pull:
-	•	You fetch the latest changes from a remote repository and integrate them into your local branch.
-	•	Command: git pull (same as git fetch + git merge).
-	2.	Merge Branch:
-	•	You combine changes from one branch into another.
-	•	Usually, you merge a feature branch into the main branch after development.
-	•	Command: git merge <branch-name>.
-	3.	Pull Request (PR) (GitHub-specific):
-	•	You request that someone reviews and merges your branch into the main branch.
-	•	Typically used in teams for code review and collaboration.
-	•	After approval, your branch gets merged into the target branch (e.g., main).
+git clone https://github.com/USERNAME/REPOSITORY.git
+
+2. Create a Branch (Work on a Separate Version)
+
+git checkout -b my-feature-branch
+
+3. Make Changes & Save Them
+	•	Make your changes in the code.
+	•	Save your progress:
+
+git add .
+git commit -m "Description of changes"
+
+
+
+4. Push Changes to GitHub
+
+git push -u origin my-feature-branch
+
+5. Open a Pull Request (PR)
+	•	Go to the repository on GitHub.
+	•	You’ll see a prompt: Create Pull Request.
+	•	Add a description → Click Create.
+
+6. Review & Merge
+	•	A colleague reviews your PR.
+	•	After approval, click Merge Pull Request on GitHub.
+
+⚠️ Key Commands Cheat Sheet
+
+Action	Command
+Clone repo	git clone <url>
+Create a branch	git checkout -b <branch-name>
+Switch branches	git checkout <branch-name>
+Add changes	git add .
+Commit changes	git commit -m "Message"
+Push branch	git push -u origin <branch-name>
+Update local branch	git pull
+See branch list	git branch
+
+✅ Tips
+	•	One branch per task/feature.
+	•	Commit often with clear messages.
+	•	Ask for help anytime—better to ask than get stuck.
+
+Let me know if you need help! 🚀
