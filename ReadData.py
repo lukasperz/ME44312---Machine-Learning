@@ -45,3 +45,5 @@ for year in years:
 year, month = 2024, 1
 if year in nyc_taxi_data and month in nyc_taxi_data[year]:
     print(nyc_taxi_data[year][month].head())
+
+    print(nyc_taxi_data[year][month].head())
