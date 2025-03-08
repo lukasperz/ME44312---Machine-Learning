@@ -3,7 +3,7 @@ import os
 import fastparquet
 
 # Define the absolute path to the directory containing the data
-DATA_DIR = r"C:\Users\danie\OneDrive - Delft University of Technology\Q3\Machine Learning\DATA_TRAINING_GREEN"
+DATA_DIR = r"/Users/lukas/TU Delft (Macintosh HD)/ML_for_Transport_and_Multi_Machine_Systems/Assignment/Data"
 
 # Initialize a dictionary to store data
 nyc_taxi_data = {}
@@ -56,18 +56,7 @@ for year in years:
 
 pd.set_option('display.max_columns', None)
 
-# Example usage: Access January 2024 data
-def get_taxi_data(year, month):
-    if year in nyc_taxi_data and month in nyc_taxi_data[year]:
-        return nyc_taxi_data[year][month]
-    else:
-        print(f"No data available for {year}-{month}.")
-        return None
 
-df_jan_2024 = get_taxi_data(2021, 1)
-if df_jan_2024 is not None:
-    print(df_jan_2024.head())
-    # print(df_jan_2024.tail())
 
 
 

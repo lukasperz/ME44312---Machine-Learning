@@ -10,7 +10,8 @@ import matplotlib.pyplot as plt
 
 #%% PART A: LOAD AND PREPROCESS DATA
 
-DATA_DIR = r"C:\Users\danie\OneDrive - Delft University of Technology\Q3\Machine Learning\DATA_Try" # Path to folder
+# Define the absolute path to the directory containing the data
+DATA_DIR = r"/Users/lukas/TU Delft (Macintosh HD)/ML_for_Transport_and_Multi_Machine_Systems/Assignment/Data"
 
 columns_to_keep = ["tpep_pickup_datetime", "RatecodeID", "trip_distance", "fare_amount", "PULocationID", "payment_type", "tip_amount"]
 
