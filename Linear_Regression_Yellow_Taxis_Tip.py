@@ -5,16 +5,19 @@ from datetime import datetime
 from sklearn.linear_model import LinearRegression
 import matplotlib.pyplot as plt
 
+
 #!!! You have to create a folder with all the required parquet files inside. I created one for yellow and one for green taxis for 2015 -2022. To run the code you have to do the same
 #!!!For the green taxis the cell related to the pickup time is called "tpep_pickup_datetime", while for yellow taxis "lpep_pickup_datetime"
 
 #%% PART A: LOAD AND PREPROCESS DATA
+# path = r'/\Exercise1-2023\Exercise1-2023\data\ex1data1.txt'
+# data = pd.read_csv(path, header=None, names=['Population', 'Profit'])
 
 DATA_DIR = r"C:\Users\danie\OneDrive - Delft University of Technology\Q3\Machine Learning\DATA_Try" # Path to folder
 
 columns_to_keep = ["tpep_pickup_datetime", "RatecodeID", "trip_distance", "fare_amount", "PULocationID", "payment_type", "tip_amount"]
 
-all_data = [] # we read the parquet file and add the columns to keep
+all_data = []
 
 for file in os.listdir(DATA_DIR):
     if file.endswith(".parquet"):
@@ -23,54 +26,46 @@ for file in os.listdir(DATA_DIR):
         df = df.loc[:, df.columns.intersection(columns_to_keep)]
         all_data.append(df)
 
-if all_data: # We put together all years
+if all_data:
     df = pd.concat(all_data, ignore_index=True)
 else:
     raise ValueError("No data files found.")
 
-df = df.dropna() # We decided to remove rows where one of our inputs is not given
+df = df.dropna()
+df = df[(df["trip_distance"] > 0) & (df["fare_amount"] > 0) & (df["tip_amount"] > 0)]
 
-# We ensure that all independent variables are greater than 0 since otherwise also if a certain input is present in the cell it is not physical
-df = df[(df["RatecodeID"] > 0) & (df["trip_distance"] > 0) & (df["fare_amount"] > 0) & (df["PULocationID"] > 0) & (df["payment_type"] > 0) & (df["tip_amount"] > 0)]
-
-# Since the time is no number per se we divide it into the categories weekday and weekend (1 or 0) and morning, noon, afternoon, evening and night (principle: 0 0 1 0 0 if happened during afternoon)
 pickup_time = pd.to_datetime(df["tpep_pickup_datetime"])
 df["weekday"] = pickup_time.dt.weekday < 5  # 1 if weekday, 0 if weekend
 df["weekday"] = df["weekday"].astype(int)
 
-# Categorize time of day
 bins = [0, 6, 12, 16, 20, 24]
-labels = ["night", "morning", "noon", "afternoon", "evening"] # This associates a 1 for the time_of_day where the trip happens and a zero for all others. If the trip happens at night then all are zero.
+labels = ["night", "morning", "noon", "afternoon", "evening"]
 df["time_of_day"] = pd.cut(pickup_time.dt.hour, bins=bins, labels=labels, right=False)
 
-df = pd.get_dummies(df, columns=["time_of_day"], drop_first=True)  # One-hot encoding: used to assign numbers to the bins chosen
+df = pd.get_dummies(df, columns=["time_of_day"], drop_first=True)
 
-# Define X (independent variables) and y (dependent variable)
-X = df[["weekday", "RatecodeID", "trip_distance", "fare_amount", "PULocationID", "payment_type"] + list(df.filter(like='time_of_day_'))] # We define the variables X1,X2,X3 of our hypothesis function
-y = df["tip_amount"] # The inputs generate the output h = Y
+# One-hot encoding for categorical variables
+df = pd.get_dummies(df, columns=["PULocationID", "RatecodeID", "payment_type"], drop_first=True)
 
-X = np.asarray(X, dtype=np.float64) # We convert the array into a NumPy array and force it to be a float #todo: do we have non float before that is than forced transformed into float?
+X = df[["weekday", "trip_distance", "fare_amount"] + list(df.filter(like='time_of_day_')) + list(df.filter(like='PULocationID_')) + list(df.filter(like='RatecodeID_')) + list(df.filter(like='payment_type_'))]
+y = df["tip_amount"]
+
+X = np.asarray(X, dtype=np.float64)
 y = np.asarray(y, dtype=np.float64).reshape(-1, 1)
 
-print("X shape:", X.shape) # Just checking the shape to see if we really get arrays of independent variables for one dependent variable
+print("X shape:", X.shape)
 print("y shape:", y.shape)
 
-X_mean = np.mean(X, axis=0) # We apply a so called feature scaling to normalize
+X_mean = np.mean(X, axis=0)
 X_std = np.std(X, axis=0, ddof=1)
-
-# Ensuring that the array stay an array and if we would have a division by zero we set it to a division by one #todo: How does this affect the calculation/prediction
 X_std = np.atleast_1d(X_std)
 X_std[X_std == 0] = 1
-
-X = (X - X_mean) / X_std # We apply a so called feature scaling to normalize
+X = (X - X_mean) / X_std
 
 y_mean = np.mean(y)
 y_std = np.std(y, ddof=1)
-
-# Ensuring that the array stay an array and if we would have a division by zero we set it to a division by one #todo: How does this affect the calculation/prediction
 y_std = np.atleast_1d(y_std)
 y_std[y_std == 0] = 1
-
 y = (y - y_mean) / y_std
 
 X = np.column_stack((np.ones(X.shape[0]), X))
@@ -81,24 +76,24 @@ theta = np.zeros((1, X.shape[1]))
 def computeCost(X, y, theta):
     m = len(y)
     h = X @ theta.T
-    return np.sum((h - y) ** 2) / (2 * m)  # We create a function to compute the Cost function J(theta) = 1/2*m * sum for i = 1 to m of residual; m = number of training point = number of X rows
+    return np.sum((h - y) ** 2) / (2 * m)
 
-def gradientDescent(X, y, theta, alpha, iters):  #optimize theta using gradient descent
+def gradientDescent(X, y, theta, alpha, iters):
     m = len(y)
     cost_history = []
-    for _ in range(iters): #thetaj is computed iteratively for the hypothesis function
+    for _ in range(iters):
         gradient = (X.T @ ((X @ theta.T) - y)) / m
         theta = theta - alpha * gradient.T
         cost_history.append(computeCost(X, y, theta))
     return theta, cost_history
 
-alpha = 0.01 # The learning rate has to be defined to train the model
-iters = 400 # Number of Iterations 1000 to be sure to converge
-theta, cost_history = gradientDescent(X, y, theta, alpha, iters) # We execute the function and print the result afterwards
+alpha = 0.01
+iters = 400
+theta, cost_history = gradientDescent(X, y, theta, alpha, iters)
 
 print("Optimized Theta:", theta)
 
-plt.figure(figsize=(8,6)) # We create a figure to plot the cost function
+plt.figure(figsize=(8,6))
 plt.plot(range(iters), cost_history, 'r')
 plt.xlabel('Iterations')
 plt.ylabel('Cost')
@@ -107,25 +102,24 @@ plt.show()
 
 #%% PART C: LINEAR REGRESSION USING SCIKIT-LEARN TO COMPARE RESULTS
 
-# We did the same what we did in part B, but now with a preinstalled library
 model = LinearRegression()
 model.fit(X, y)
 print("Scikit-learn coefficients:", model.coef_)
 
-#%% PART D: DISPLAY REGRESSION FORMULA
+#%% PART D: Plot formula
+print("Optimized Theta:")
+print(theta.flatten())
 
-# We extract the final theta values to display our regression formula that can than be used to predict the tip_amount
-theta_values = theta.flatten()
-print("Regression Formula:")
-formula = "Tip Amount = {:.4f}".format(theta_values[0])
-feature_names = ["Weekday", "RatecodeID", "Trip Distance", "Fare Amount", "PULocationID", "Payment Type"] + list(df.filter(like='time_of_day_'))
+formula = "Tip Amount = {:.4f}".format(theta[0, 0])
+feature_names = ["Weekday", "Trip Distance", "Fare Amount"] + list(df.filter(like='time_of_day_')) + list(df.filter(like='PULocationID_')) + list(df.filter(like='RatecodeID_')) + list(df.filter(like='payment_type_'))
 for i, feature in enumerate(feature_names):
-    formula += " + ({:.4f} * {})".format(theta_values[i+1], feature)
+    formula += " + ({:.4f} * {})".format(theta[0, i+1], feature)
 
-# We print the regression formula
+print("Regression Formula:")
 print(formula)
 
-#%% PART E: Evaluation for random point
+
+# %% PART E: PREDICTION FUNCTION
 
 def predict_tip_amount():
     while True:
@@ -133,51 +127,54 @@ def predict_tip_amount():
 
         # User inputs
         weekday = int(input("Enter Weekday (1 for weekday, 0 for weekend): "))
-        ratecode_id = float(input("Enter RatecodeID: "))
+        ratecode_id = int(input("Enter RatecodeID: "))
         trip_distance = float(input("Enter Trip Distance: "))
         fare_amount = float(input("Enter Fare Amount: "))
-        pu_location_id = float(input("Enter PULocationID: "))
-        payment_type = float(input("Enter Payment Type: "))
+        pu_location_id = int(input("Enter PULocationID: "))
+        payment_type = int(input("Enter Payment Type: "))
 
-        # Time of day inputs (One-Hot Encoded)
-        print("\nSelect Time of Day:")
-        print("1: Night (12 AM - 6 AM)")
-        print("2: Morning (6 AM - 12 PM)")
-        print("3: Noon (12 PM - 4 PM)")
-        print("4: Afternoon (4 PM - 8 PM)")
-        print("5: Evening (8 PM - 12 AM)")
-        time_of_day_choice = int(input("Enter your choice (1-5): "))
+        # Ask for time of day category
+        time_of_day = input("Enter Time of Day (morning, noon, afternoon, evening, night): ").strip().lower()
 
-        # One-hot encoding the time_of_day variables
-        time_of_day_morning = 1 if time_of_day_choice == 2 else 0
-        time_of_day_noon = 1 if time_of_day_choice == 3 else 0
-        time_of_day_afternoon = 1 if time_of_day_choice == 4 else 0
-        time_of_day_evening = 1 if time_of_day_choice == 5 else 0
+        # Extract theta values
+        theta_values = theta.flatten()
 
-        # Applying the formula
-        tip_amount = (
-                -0.0000 +
-                (0.0166 * weekday) +
-                (0.0790 * ratecode_id) +
-                (0.0169 * trip_distance) +
-                (0.7293 * fare_amount) +
-                (-0.0165 * pu_location_id) +
-                (0.0072 * payment_type) +
-                (-0.0153 * time_of_day_morning) +
-                (-0.0053 * time_of_day_noon) +
-                (0.0157 * time_of_day_afternoon) +
-                (0.0016 * time_of_day_evening)
-        )
+        # Base formula with bias term
+        tip_amount = theta_values[0] + (theta_values[1] * weekday) + (theta_values[2] * trip_distance) + (
+                    theta_values[3] * fare_amount)
+
+        # Handle one-hot encoding for time_of_day
+        for i, col in enumerate(df.filter(like='time_of_day_').columns, start=4):
+            if f'time_of_day_{time_of_day}' == col:
+                tip_amount += theta_values[i]
+
+        # Handle one-hot encoding for PULocationID
+        for i, col in enumerate(df.filter(like='PULocationID_').columns,
+                                start=4 + len(df.filter(like='time_of_day_').columns)):
+            if f'PULocationID_{pu_location_id}' == col:
+                tip_amount += theta_values[i]
+
+        # Handle one-hot encoding for RatecodeID
+        for i, col in enumerate(df.filter(like='RatecodeID_').columns,
+                                start=4 + len(df.filter(like='time_of_day_').columns) + len(
+                                        df.filter(like='PULocationID_').columns)):
+            if f'RatecodeID_{ratecode_id}' == col:
+                tip_amount += theta_values[i]
+
+        # Handle one-hot encoding for Payment Type
+        for i, col in enumerate(df.filter(like='payment_type_').columns,
+                                start=4 + len(df.filter(like='time_of_day_').columns) + len(
+                                        df.filter(like='PULocationID_').columns) + len(
+                                        df.filter(like='RatecodeID_').columns)):
+            if f'payment_type_{payment_type}' == col:
+                tip_amount += theta_values[i]
+
+        # Ensure tip amount is non-negative
+        tip_amount = max(0, tip_amount)
 
         print(f"\nPredicted Tip Amount: {tip_amount:.4f}")
 
-        # Ask if the user wants to run again
-        choice = input("\nDo you want to predict another tip amount? (yes/no): ").strip().lower()
-        if choice != 'yes':
-            print("Exiting program. Goodbye!")
-            break
-
-
-# Run the function
 predict_tip_amount()
+
+
 
