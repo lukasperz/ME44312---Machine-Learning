@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 #%% PART A: LOAD AND PREPROCESS DATA
 
 
-DATA_DIR = r"C:\Users\danie\OneDrive - Delft University of Technology\Q3\Machine Learning\DATA_EVALUATE_YELLOW" # path to folder in order to read data
+DATA_DIR = r"/Users/lukas/Library/CloudStorage/OneDrive-Personal/Documents/TU Delft/03_EFPT/Q3/05_ML_for_Transport_and_Multi_Machine_Systems/06_Software_and_Programming/Data" # path to folder in order to read data
 
 
 columns_to_keep = ["tpep_pickup_datetime", "RatecodeID", "trip_distance", "fare_amount"] # we just need a few columns from the entire dataset
