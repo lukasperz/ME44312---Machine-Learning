@@ -17,16 +17,29 @@ sampled_training_yellow = []
 sampled_validation_green = []
 sampled_validation_yellow = []
 
+def three_sigma_filter(df, columns):
+    """
+    Removes rows in `df` where values in each of the specified `columns`
+    lie outside the mean ± 3*std for that column.
+    """
+    for col in columns:
+        mean_val = df[col].mean()
+        std_val = df[col].std()
+
+        upper_bound = mean_val + 3 * std_val
+        lower_bound = mean_val - 3 * std_val
+
+        df = df[(df[col] >= lower_bound) & (df[col] <= upper_bound)]
+    return df
+
 # Iterate through all files in the directory
 for filename in os.listdir(directory):
     # We only want .parquet files for green or yellow
     if (filename.startswith("green") or filename.startswith("yellow")) and filename.endswith(".parquet"):
         file_path = os.path.join(directory, filename)
 
-
         # --- Extract the year from the filename ---
         # Typical format: "green_tripdata_2018-01.parquet"
-        # We can split on "_" and then split on "-"
         # Example: ["green", "tripdata", "2018-01.parquet"] -> "2018"
         year_str = filename.split('_')[2].split('-')[0]
         year = int(year_str)
@@ -34,8 +47,7 @@ for filename in os.listdir(directory):
         # Read the parquet file
         df = pq.read_table(file_path).to_pandas()
 
-        # Filter rows based on the conditions:
-        # Trip distance > 0, Fare amount > 0, Passenger count > 0, Tip amount >= 0
+        # 1) Basic filtering
         df_filtered = df[
             (df['trip_distance'] > 0) &
             (df['fare_amount'] > 0) &
@@ -43,25 +55,27 @@ for filename in os.listdir(directory):
             (df['tip_amount'] >= 0)
         ]
 
-        # Sample 10,000 random rows (or fewer if the file has fewer rows)
+        # 2) 3-sigma outlier removal for specified columns
+        # Adjust this list as needed for your specific use case
+        columns_to_filter = ['trip_distance', 'fare_amount', 'passenger_count', 'tip_amount']
+        df_filtered = three_sigma_filter(df_filtered, columns_to_filter)
+
+        # 3) Sample 16,500 random rows (or fewer if the file has fewer rows)
         if len(df_filtered) > 0:
             sampled_df = df_filtered.sample(n=min(16500, len(df_filtered)), random_state=42)
         else:
-            # Skip empty dataframes
-            continue
+            continue  # Skip if nothing left after filtering
 
-        # --- Decide which list to append to based on taxi color & year ---
+        # 4) Decide which list to append to (training vs. validation, green vs. yellow)
         if filename.startswith("green"):
             if year >= 2020:
                 sampled_training_green.append(sampled_df)
             else:
-                # year <= 2018 goes to validation
                 sampled_validation_green.append(sampled_df)
-        elif filename.startswith("yellow"):
+        else:  # filename.startswith("yellow")
             if year >= 2020:
                 sampled_training_yellow.append(sampled_df)
             else:
-                # year <= 2018 goes to validation
                 sampled_validation_yellow.append(sampled_df)
 
 # --- Concatenate and save each subset if not empty ---
