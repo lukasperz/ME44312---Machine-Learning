@@ -3,7 +3,7 @@ import os
 import fastparquet
 
 # Define the absolute path to the directory containing the data
-DATA_DIR = r"/Users/lukas/TU Delft (Macintosh HD)/ML_for_Transport_and_Multi_Machine_Systems/Assignment/Data"
+DATA_DIR = os.path.abspath(os.path.join(os.getcwd(), '..'))
 
 # Initialize a dictionary to store data
 nyc_taxi_data = {}
@@ -55,12 +55,3 @@ for year in years:
     print(f"Year {year}: Months available -> {sorted(nyc_taxi_data[year].keys())}")
 
 pd.set_option('display.max_columns', None)
-
-
-
-
-
-
-
-
-
