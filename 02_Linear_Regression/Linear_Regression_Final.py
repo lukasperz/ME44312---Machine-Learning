@@ -7,32 +7,55 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_absolute_error, r2_score
 
 base_dir = os.getcwd()                                                                                                                          # Get the current working directory
-
 # Define the relative path to the file (it has to be in your directory)
 file_path = os.path.join(base_dir, "yellow_taxi_data.parquet")
 
-# # To check if the file exists locally, otherwise raise an error
+# # Use this to check if the file exists locally, otherwise raise an error
 # if not os.path.exists(file_path):
 #     raise FileNotFoundError(f"File not found: {file_path}")
 
 data = pd.read_parquet(file_path)                                                                                                               # Load the dataset
-data = data[['trip_distance', 'fare_amount', 'passenger_count', 'tip_amount']]                                                                  # Select the relevant columns
+data = data[['trip_distance', 'fare_amount','tip_amount', 'passenger_count']]                                                                   # Select the relevant columns
 
 # To have an idea of what is going on we try to visualize the individual relationships of the output to the inputs
+
+filtered_data = data[data['tip_amount'] > 0]                                                                                                    # Remove all points where tip_amount == 0
+
 fig, axes = plt.subplots(1, 3, figsize=(18, 5))
+
 for i, feature in enumerate(['trip_distance', 'fare_amount', 'passenger_count']):
-    axes[i].scatter(data[feature], data['tip_amount'])
+    # We apply a 99th percentile filtering to remove extreme outliers
+    if feature in ['trip_distance', 'fare_amount']:
+        feature_data = filtered_data[filtered_data[feature] <= filtered_data[feature].quantile(0.99)]
+    else:
+        feature_data = filtered_data                                                                                                            # Keep all passenger_count values
+
+    # We scatter plot the result
+    axes[i].scatter(feature_data[feature], feature_data['tip_amount'], alpha=0.3, label="Data Points")
     axes[i].set_xlabel(feature)
     axes[i].set_ylabel('Tip Amount')
-    # if feature == 'trip_distance':
-    #     axes[i].set_xlim(0, data[feature].quantile(0.99))                                                                                       # Limit to 99th percentile to remove outliers, because we saw that some single points where far off the majority
-    #     axes[i].ticklabel_format(style='plain', axis='x')                                                                                       # Ensure readable formatting
+
+    # Ensure x-axis has readable formatting
+    axes[i].ticklabel_format(style='plain', axis='x')
+
+    # Use polynomial regression to fit a trend line (Linear fit)
+    x_vals = np.linspace(feature_data[feature].min(), feature_data[feature].max(), 100)
+    poly_coeffs = np.polyfit(feature_data[feature], feature_data['tip_amount'], deg=1)  # Linear fit
+    y_vals = np.polyval(poly_coeffs, x_vals)
+
+    axes[i].plot(x_vals, y_vals, color="yellow", linewidth=3, label="Trend Line")                                                               # Plot the trend line in yellow
+
+axes[0].set_xlim(0, filtered_data['trip_distance'].quantile(0.99))                                                                              # Increase graph size till borders
+axes[1].set_xlim(0, filtered_data['fare_amount'].quantile(0.99))
+
+plt.suptitle("Relationship Between Trip Distance, Fare Amount, Passengers count and Tip Amount", fontsize=14)
+plt.legend()
 plt.show()
 
 # %% ----- Setup X and Y -----
 
 # Initializing the variables, setting X (input data) and y (target variable)
-features = ['trip_distance', 'fare_amount', 'passenger_count']
+features = ['trip_distance', 'fare_amount']
 target = 'tip_amount'
 
 X = data[features].values                                                                                                                       # Extract feature values as NumPy array
@@ -47,15 +70,15 @@ model = LinearRegression()
 model.fit(X_train, y_train)
 
 # Get the model coefficients
-theta0 = model.intercept_                                                                                                                    # Intercept term
-theta1, theta2, theta3 = model.coef_                                                                                                         # Directly extract all three coefficients
+theta0 = model.intercept_                                                                                                                       # Intercept term
+theta1, theta2 = model.coef_                                                                                                                    # Directly extract all three coefficients
 
 # Print the regression formula
-print(f"Regression Equation: tip_amount = {theta0:.4f} + {theta1:.4f} * trip_distance + {theta2:.4f} * fare_amount + {theta3:.4f} * passenger_count")
+print(f"Regression Equation: tip_amount = {theta0:.4f} + {theta1:.4f} * trip_distance + {theta2:.4f} * fare_amount")
 
 # %% ----- Evaluate our model -----
 
-y_pred = theta0 + (theta1 * X_val[:, 0]) + (theta2 * X_val[:, 1]) + (theta3 * X_val[:, 2])                                                      # Predicting the tip_amount with our trained model
+y_pred = theta0 + (theta1 * X_val[:, 0]) + (theta2 * X_val[:, 1])                                                                               # Predicting the tip_amount with our trained model
 y_pred = np.maximum(y_pred, 0)                                                                                                                  # The predicted tip amount has to be at least zero
 
 # Compute Mean Absolute Error (MAE)
