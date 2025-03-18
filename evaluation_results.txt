@@ -1,0 +1,24 @@
+Feature Set: full
+Green Taxi Model - RMSE: 1.10, MAE: 0.60, R²: 0.63
+Yellow Taxi Model - RMSE: 1.06, MAE: 0.56, R²: 0.73
+
+Feature Set: fare_trip
+Green Taxi Model - RMSE: 1.66, MAE: 1.36, R²: 0.16
+Yellow Taxi Model - RMSE: 1.73, MAE: 1.35, R²: 0.29
+
+Feature Set: payment_passenger
+Green Taxi Model - RMSE: 1.38, MAE: 0.79, R²: 0.42
+Yellow Taxi Model - RMSE: 1.64, MAE: 0.97, R²: 0.36
+
+Feature Set: location
+Green Taxi Model - RMSE: 1.73, MAE: 1.36, R²: 0.09
+Yellow Taxi Model - RMSE: 2.05, MAE: 1.51, R²: 0.01
+
+Feature Set: no_location
+Green Taxi Model - RMSE: 1.12, MAE: 0.61, R²: 0.62
+Yellow Taxi Model - RMSE: 1.06, MAE: 0.57, R²: 0.73
+
+Feature Set: minimal
+Green Taxi Model - RMSE: 1.66, MAE: 1.37, R²: 0.16
+Yellow Taxi Model - RMSE: 1.75, MAE: 1.35, R²: 0.27
+
