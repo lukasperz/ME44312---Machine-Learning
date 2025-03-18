@@ -12,7 +12,7 @@ import traceback
 import os
 import psutil  # For memory monitoring
 
-# Debugging log file
+# %% Debugging log file & System Check before training
 debug_log_path = "debug_log.txt"
 
 def log_debug(message):
@@ -26,10 +26,11 @@ process = psutil.Process(os.getpid())
 mem_usage = process.memory_info().rss / (1024 * 1024)  # Convert to MB
 log_debug(f"Memory Usage Before Training: {mem_usage:.2f} MB")
 
+# %% Read Data
 data_green = pd.read_parquet('green_taxi_data.parquet')
 data_yellow = pd.read_parquet('yellow_taxi_data.parquet')
 
-# List of categorical columns to encode
+# List of categorical columns to encode (Turns String values into Integers)
 categorical_features = ['payment_type', 'store_and_fwd_flag', 'RatecodeID', 'PULocationID', 'DOLocationID']
 
 # Apply Label Encoding to categorical features in both datasets
@@ -50,6 +51,7 @@ data_yellow.head()
 y_green = data_green['tip_amount'].values
 y_yellow = data_yellow['tip_amount'].values
 
+# %% FEATURE SETS Definition
 # Define different feature sets for both datasets
 
 # Full feature set using all potentially useful variables
@@ -101,7 +103,8 @@ feature_sets = {
 
 X_green, X_yellow = feature_sets[FEATURE_SET]
 
-# %% Splitting of the data into train/test/validation (60:20:20) for both green and yellow data
+# %% PRE PROCESSING OF DATA
+# Splitting of the data into train/test/validation (60:20:20) for both green and yellow data
 
 # Splitting green dataset
 X_train_green, X_test_green, y_train_green, y_test_green = train_test_split(X_green, y_green, test_size=0.2, random_state=0)
@@ -136,12 +139,12 @@ X_train_yellow = scaler_yellow.transform(X_train_yellow)
 X_val_yellow = scaler_yellow.transform(X_val_yellow)
 X_test_yellow = scaler_yellow.transform(X_test_yellow)
 
-# Save the used data 
-np.save("X_test_green.npy", X_test_green)
-np.save("y_test_green.npy", y_test_green)
-np.save("X_test_yellow.npy", X_test_yellow)
-np.save("y_test_yellow.npy", y_test_yellow)
-print("Test datasets saved successfully.")
+# Save the used data with feature set name
+np.save(f"X_test_green_{FEATURE_SET}.npy", X_test_green)
+np.save(f"y_test_green_{FEATURE_SET}.npy", y_test_green)
+np.save(f"X_test_yellow_{FEATURE_SET}.npy", X_test_yellow)
+np.save(f"y_test_yellow_{FEATURE_SET}.npy", y_test_yellow)
+print(f"Test datasets saved successfully with feature set: {FEATURE_SET}.")
 
 #%% Training the Networks
 
@@ -169,7 +172,7 @@ try:
     # Training the model for Green Taxi data
     log_debug("Training Green Taxi Model...")
     nn_green = MLPRegressor(
-        hidden_layer_sizes=(64, 32),
+        hidden_layer_sizes=(64, 32, 16),
         activation='relu',
         solver='adam',
         learning_rate_init=learning_rate,
@@ -203,12 +206,15 @@ except Exception as e:
     traceback.print_exc()
     sys.exit(1)
 
-# Save trained models
+# Save trained models into a designated folder
+model_dir = f"NN_Models_{FEATURE_SET}"
+os.makedirs(model_dir, exist_ok=True)
+
 log_debug("Saving models...")
-with open(f"nn_green_{FEATURE_SET}.pkl", "wb") as f:
+with open(os.path.join(model_dir, f"nn_green_{FEATURE_SET}.pkl"), "wb") as f:
     pickle.dump(nn_green, f)
 
-with open(f"nn_yellow_{FEATURE_SET}.pkl", "wb") as f:
+with open(os.path.join(model_dir, f"nn_yellow_{FEATURE_SET}.pkl"), "wb") as f:
     pickle.dump(nn_yellow, f)
 
 log_debug("Models saved successfully.")
