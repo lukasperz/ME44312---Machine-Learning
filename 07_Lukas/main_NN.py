@@ -1,124 +1,70 @@
-
-
-import numpy as np
-import pandas as pd
+import os
 import pickle
+import numpy as np
 import matplotlib.pyplot as plt
-from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
-from sklearn.inspection import permutation_importance
+from sklearn.metrics import mean_squared_error, r2_score
 
-# Load trained models
-with open("nn_green_full.pkl", "rb") as f:
-    nn_green = pickle.load(f)
+# Define feature sets to evaluate
+feature_sets = ["full", "fare_trip", "payment_passenger", "location", "no_location", "minimal"]
 
-with open("nn_yellow_full.pkl", "rb") as f:
-    nn_yellow = pickle.load(f)
+for FEATURE_SET in feature_sets:
+    print(f"\nEvaluating feature set: {FEATURE_SET}")
 
-# Load test datasets
-X_test_green = np.load("X_test_green.npy")
-y_test_green = np.load("y_test_green.npy")
-X_test_yellow = np.load("X_test_yellow.npy")
-y_test_yellow = np.load("y_test_yellow.npy")
+    # Load trained models from the automatically created directory
+    model_dir = f"NN_Models_{FEATURE_SET}"
+    with open(os.path.join(model_dir, f"nn_green_{FEATURE_SET}.pkl"), "rb") as f:
+        nn_green = pickle.load(f)
+    with open(os.path.join(model_dir, f"nn_yellow_{FEATURE_SET}.pkl"), "rb") as f:
+        nn_yellow = pickle.load(f)
+    
+    # Load test data from the automatically created directory
+    X_test_green = np.load(os.path.join(model_dir, f"X_test_green_{FEATURE_SET}.npy"))
+    y_test_green = np.load(os.path.join(model_dir, f"y_test_green_{FEATURE_SET}.npy"))
+    X_test_yellow = np.load(os.path.join(model_dir, f"X_test_yellow_{FEATURE_SET}.npy"))
+    y_test_yellow = np.load(os.path.join(model_dir, f"y_test_yellow_{FEATURE_SET}.npy"))
 
-# Define feature names manually
-feature_names = ['fare_amount', 'trip_distance', 'payment_type', 'passenger_count',
-                 'PULocationID', 'DOLocationID', 'RatecodeID', 'congestion_surcharge',
-                 'tolls_amount']
+    # Make predictions
+    y_pred_green = nn_green.predict(X_test_green)
+    y_pred_yellow = nn_yellow.predict(X_test_yellow)
 
-# Ensure shape consistency before converting to DataFrame
-if X_test_green.ndim == 2 and X_test_green.shape[1] == len(feature_names):
-    X_test_green = pd.DataFrame(X_test_green, columns=feature_names)
-elif X_test_green.ndim == 2 and X_test_green.shape[0] == len(feature_names):
-    print(f"Warning: X_test_green shape {X_test_green.shape} mismatches feature_names length, transposing array.")
-    X_test_green = pd.DataFrame(X_test_green.T, columns=feature_names)
-else:
-    print(f"Warning: X_test_green has shape {X_test_green.shape}, expected {len(feature_names)} columns.")
+    # Evaluation Metrics
+    rmse_green = np.sqrt(mean_squared_error(y_test_green, y_pred_green))
+    r2_green = r2_score(y_test_green, y_pred_green)
 
-if X_test_yellow.ndim == 2 and X_test_yellow.shape[1] == len(feature_names):
-    X_test_yellow = pd.DataFrame(X_test_yellow, columns=feature_names)
-elif X_test_yellow.ndim == 2 and X_test_yellow.shape[0] == len(feature_names):
-    print(f"Warning: X_test_yellow shape {X_test_yellow.shape} mismatches feature_names length, transposing array.")
-    X_test_yellow = pd.DataFrame(X_test_yellow.T, columns=feature_names)
-else:
-    print(f"Warning: X_test_yellow has shape {X_test_yellow.shape}, expected {len(feature_names)} columns.")
+    rmse_yellow = np.sqrt(mean_squared_error(y_test_yellow, y_pred_yellow))
+    r2_yellow = r2_score(y_test_yellow, y_pred_yellow)
 
-# Make predictions
-y_pred_green = nn_green.predict(X_test_green)
-y_pred_yellow = nn_yellow.predict(X_test_yellow)
+    print(f"Green Taxi Model - RMSE: {rmse_green:.2f}, R²: {r2_green:.2f} for feature set: {FEATURE_SET}")
+    print(f"Yellow Taxi Model - RMSE: {rmse_yellow:.2f}, R²: {r2_yellow:.2f} for feature set: {FEATURE_SET}")
 
-# Compute feature importance for Green Taxi
-result_green = permutation_importance(nn_green, X_test_green, y_test_green, scoring="neg_mean_squared_error", random_state=0)
-importance_green = result_green.importances_mean
+    # Visualization
+    plt.figure(figsize=(12, 6))
 
-# Compute feature importance for Yellow Taxi
-result_yellow = permutation_importance(nn_yellow, X_test_yellow, y_test_yellow, scoring="neg_mean_squared_error", random_state=0)
-importance_yellow = result_yellow.importances_mean
+    # Scatter Plot: Actual vs Predicted
+    plt.subplot(1, 2, 1)
+    plt.scatter(y_test_green, y_pred_green, alpha=0.5, label="Green Taxis", color="green")
+    plt.scatter(y_test_yellow, y_pred_yellow, alpha=0.5, label="Yellow Taxis", color="gold")
+    plt.plot([min(y_test_green), max(y_test_green)], [min(y_test_green), max(y_test_green)], 'k--', lw=2)
+    plt.xlabel("Actual Fare")
+    plt.ylabel("Predicted Fare")
+    plt.legend()
+    plt.title(f"Predicted vs Actual Taxi Fares - {FEATURE_SET}")
 
-# Sort and display top features
-sorted_indices_green = np.argsort(importance_green)[::-1]
-sorted_indices_yellow = np.argsort(importance_yellow)[::-1]
+    # Residual Histogram
+    plt.subplot(1, 2, 2)
+    plt.hist(y_test_green - y_pred_green, bins=30, alpha=0.5, label="Green Taxis", color="green")
+    plt.hist(y_test_yellow - y_pred_yellow, bins=30, alpha=0.5, label="Yellow Taxis", color="gold")
+    plt.xlabel("Prediction Error")
+    plt.ylabel("Frequency")
+    plt.legend()
+    plt.title(f"Residual Error Distribution - {FEATURE_SET}")
 
-print("\nTop 5 Features for Green Taxi Model:")
-for i in range(5):
-    print(f"{feature_names[sorted_indices_green[i]]}: {importance_green[sorted_indices_green[i]]:.4f}")
+    plt.tight_layout()
+    plt.show()
 
-print("\nTop 5 Features for Yellow Taxi Model:")
-for i in range(5):
-    print(f"{feature_names[sorted_indices_yellow[i]]}: {importance_yellow[sorted_indices_yellow[i]]:.4f}")
-
-# Plot Feature Importance
-plt.figure(figsize=(10, 5))
-plt.barh([feature_names[i] for i in sorted_indices_green], importance_green[sorted_indices_green], label="Green Taxi", alpha=0.7)
-plt.barh([feature_names[i] for i in sorted_indices_yellow], importance_yellow[sorted_indices_yellow], label="Yellow Taxi", alpha=0.7)
-plt.xlabel("Importance Score")
-plt.ylabel("Feature")
-plt.title("Feature Importance for Tip Prediction")
-plt.legend()
-plt.gca().invert_yaxis()
-plt.show()
-
-# Plot Fare Amount vs. Tip Amount
-plt.figure(figsize=(10, 5))
-plt.scatter(X_test_green['fare_amount'], y_test_green, alpha=0.5, label="Green Taxi Actual", color='blue')
-plt.scatter(X_test_yellow['fare_amount'], y_test_yellow, alpha=0.5, label="Yellow Taxi Actual", color='orange')
-plt.xlabel("Fare Amount ($)")
-plt.ylabel("Tip Amount ($)")
-plt.title("Fare Amount vs. Tip Amount")
-plt.legend()
-plt.show()
-
-# Plot Trip Distance vs. Tip Amount
-plt.figure(figsize=(10, 5))
-plt.scatter(X_test_green['trip_distance'], y_test_green, alpha=0.5, label="Green Taxi Actual", color='blue')
-plt.scatter(X_test_yellow['trip_distance'], y_test_yellow, alpha=0.5, label="Yellow Taxi Actual", color='orange')
-plt.xlabel("Trip Distance (miles)")
-plt.ylabel("Tip Amount ($)")
-plt.title("Trip Distance vs. Tip Amount")
-plt.legend()
-plt.show()
-
-# Evaluate model performance
-mae_green = mean_absolute_error(y_test_green, y_pred_green)
-mse_green = mean_squared_error(y_test_green, y_pred_green)
-r2_green = r2_score(y_test_green, y_pred_green)
-
-mae_yellow = mean_absolute_error(y_test_yellow, y_pred_yellow)
-mse_yellow = mean_squared_error(y_test_yellow, y_pred_yellow)
-r2_yellow = r2_score(y_test_yellow, y_pred_yellow)
-
-print("\nGreen Taxi Model Performance:")
-print(f"MAE: {mae_green:.2f}, MSE: {mse_green:.2f}, R²: {r2_green:.2f}")
-
-print("\nYellow Taxi Model Performance:")
-print(f"MAE: {mae_yellow:.2f}, MSE: {mse_yellow:.2f}, R²: {r2_yellow:.2f}")
-
-# Scatter Plot of Actual vs. Predicted Tips
-plt.figure(figsize=(10, 5))
-plt.scatter(y_test_green, y_pred_green, alpha=0.5, label="Green Taxi", color='blue')
-plt.scatter(y_test_yellow, y_pred_yellow, alpha=0.5, label="Yellow Taxi", color='orange')
-plt.plot([min(y_test_green), max(y_test_green)], [min(y_test_green), max(y_test_green)], 'r', linestyle="--", label="Perfect Prediction")
-plt.xlabel("Actual Tip Amount")
-plt.ylabel("Predicted Tip Amount")
-plt.title("Predicted vs. Actual Tips")
-plt.legend()
-plt.show()
+    # Interpretation
+    print("\nInterpretation:")
+    print(f"- The RMSE values indicate how far off predictions are in terms of fare prices for feature set: {FEATURE_SET}.")
+    print(f"- The R² score shows how well the model explains fare variability (1 is perfect, 0 means no predictive power) for feature set: {FEATURE_SET}.")
+    print(f"- The scatter plot helps visualize if predictions align with actual fares for feature set: {FEATURE_SET}.")
+    print(f"- The residual histogram checks for bias in predictions; a symmetric shape is ideal for feature set: {FEATURE_SET}.")
