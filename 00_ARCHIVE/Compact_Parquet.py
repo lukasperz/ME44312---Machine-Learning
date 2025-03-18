@@ -11,10 +11,8 @@ import pyarrow.parquet as pq
 # Directory containing the parquet files
 directory = "/Users/lukas/TU Delft (Macintosh HD)/ML_for_Transport_and_Multi_Machine_Systems/Assignment/Data"
 
-# Output filenames for green taxi data
+# Output filenames for green & yellow taxi data
 green_parquet_file = os.path.join(directory, "green_taxi_data.parquet")
-
-# Output filenames for yellow taxi data
 yellow_parquet_file = os.path.join(directory, "yellow_taxi_data.parquet")
 
 # Lists to store sampled data for each category
