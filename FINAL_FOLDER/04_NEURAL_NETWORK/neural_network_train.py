@@ -132,6 +132,8 @@ for FEATURE_SET, (X_feat_green, X_feat_yellow) in feature_sets.items():
         activation='relu',
         solver='adam',
         learning_rate_init=0.01,
+        alpha=0.001,  
+        early_stopping=True,  
         max_iter=1000,
         random_state=0
     )
@@ -144,6 +146,8 @@ for FEATURE_SET, (X_feat_green, X_feat_yellow) in feature_sets.items():
         activation='relu',
         solver='adam',
         learning_rate_init=0.01,
+        alpha=0.001,  
+        early_stopping=True,  
         max_iter=1000,
         random_state=0
     )
