@@ -1,11 +1,9 @@
 import numpy as np
 import pandas as pd
 import datetime as datetime
-from sklearn.preprocessing import StandardScaler, LabelEncoder
 from sklearn.neural_network import MLPRegressor
+from sklearn.model_selection import RandomizedSearchCV
 import pickle
-import sys
-import traceback
 import os
 
 model_dir = os.path.dirname(os.path.abspath(__file__))
@@ -66,10 +64,10 @@ X_minimal_yellow = data_yellow_train[['fare_amount', 'trip_distance']].values
 feature_sets = {
     "full": (X_green, X_yellow),
     "fare_trip": (X_fare_trip_green, X_fare_trip_yellow),
-    "payment_passenger": (X_payment_passenger_green, X_payment_passenger_yellow),
-    "location": (X_location_green, X_location_yellow),
+   # "payment_passenger": (X_payment_passenger_green, X_payment_passenger_yellow),
+   # "location": (X_location_green, X_location_yellow),
     "no_location": (X_no_location_green, X_no_location_yellow),
-    "minimal": (X_minimal_green, X_minimal_yellow),
+   # "minimal": (X_minimal_green, X_minimal_yellow),
 }
 
 # Define feature sets for test data using the same columns as the training data
@@ -102,10 +100,10 @@ X_minimal_yellow_test = data_yellow_test[['fare_amount', 'trip_distance']].value
 feature_sets_test = {
     "full": (X_green_test_full, X_yellow_test_full),
     "fare_trip": (X_fare_trip_green_test, X_fare_trip_yellow_test),
-    "payment_passenger": (X_payment_passenger_green_test, X_payment_passenger_yellow_test),
+  #  "payment_passenger": (X_payment_passenger_green_test, X_payment_passenger_yellow_test),
     "location": (X_location_green_test, X_location_yellow_test),
-    "no_location": (X_no_location_green_test, X_no_location_yellow_test),
-    "minimal": (X_minimal_green_test, X_minimal_yellow_test),
+  # "no_location": (X_no_location_green_test, X_no_location_yellow_test),
+  # "minimal": (X_minimal_green_test, X_minimal_yellow_test),
 }
 
 # Loop over every feature set and train models
@@ -126,7 +124,12 @@ for FEATURE_SET, (X_feat_green, X_feat_yellow) in feature_sets.items():
     y_train_green = y_train_green.reshape(-1, 1)
     y_train_yellow = y_train_yellow.reshape(-1, 1)
 
-    # Training the model for Green Taxi data
+    # Train the green taxi model:
+    print("Training Green Taxi Model...")
+    # Transform training target to log-scale
+    y_train_green_log = np.log1p(y_train_green)
+
+    # Train the model with the log-transformed target
     nn_green = MLPRegressor(
         hidden_layer_sizes=(128, 64, 32, 16, 8),
         activation='relu',
@@ -137,10 +140,19 @@ for FEATURE_SET, (X_feat_green, X_feat_yellow) in feature_sets.items():
         max_iter=1000,
         random_state=0
     )
-    nn_green.fit(X_train_green, y_train_green.ravel())
+    nn_green.fit(X_train_green, y_train_green_log.ravel())
 
-    # Training the model for Yellow Taxi data
+    # Later, when making predictions:
+    y_pred_green_log = nn_green.predict(X_test_green)
+    y_pred_green = np.expm1(y_pred_green_log)  # Convert back to the original scale; guaranteed to be nonnegative
+    print("Green Taxi Model Training Complete!")
+
+    # Training the model for Yellow Taxi data using GridSearchCV
     print("Training Yellow Taxi Model...")
+    # Transform training target to log-scale
+    y_train_yellow_log = np.log1p(y_train_yellow)
+
+    # Train the model with the log-transformed target
     nn_yellow = MLPRegressor(
         hidden_layer_sizes=(128, 64, 32, 16, 8),
         activation='relu',
@@ -151,7 +163,11 @@ for FEATURE_SET, (X_feat_green, X_feat_yellow) in feature_sets.items():
         max_iter=1000,
         random_state=0
     )
-    nn_yellow.fit(X_train_yellow, y_train_yellow.ravel())
+    nn_yellow.fit(X_train_yellow, y_train_yellow_log.ravel())
+
+    # Later, when making predictions:
+    y_pred_yellow_log = nn_yellow.predict(X_test_yellow)
+    y_pred_yellow = np.expm1(y_pred_yellow_log)  # Convert back to the original scale; guaranteed to be nonnegative
     print("Yellow Taxi Model Training Complete!")
 
     print("Saving models...")
@@ -163,8 +179,10 @@ for FEATURE_SET, (X_feat_green, X_feat_yellow) in feature_sets.items():
 
     # Evaluate the models on test data
     print("Evaluating Models...")
-    y_pred_green = nn_green.predict(X_test_green)
-    y_pred_yellow = nn_yellow.predict(X_test_yellow)
+    y_pred_green_log = nn_green.predict(X_test_green)
+    y_pred_green = np.expm1(y_pred_green_log)
+    y_pred_yellow_log = nn_yellow.predict(X_test_yellow)
+    y_pred_yellow = np.expm1(y_pred_yellow_log)
     test_loss_green = np.mean((y_pred_green - y_test_green) ** 2)
     test_loss_yellow = np.mean((y_pred_yellow - y_test_yellow) ** 2)
     print(f"\nGreen Taxi Model - Test Loss (MSE): {test_loss_green:.6f}")

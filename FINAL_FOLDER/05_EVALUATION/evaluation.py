@@ -59,7 +59,7 @@ feature_sets_test = {
 # === Select a Feature Set for Evaluation ===
 # To switch datasets, simply change the value of selected_feature_set below to one of the following options:
 # "full", "fare_trip", "payment_passenger", "location", "no_location", "minimal"
-selected_feature_set = "full"  # Change this value as needed
+selected_feature_set = "no_location"  # Change this value as needed
 
 # Automatically set the test feature arrays based on the selected feature set
 X_test_green = feature_sets_test[selected_feature_set][0]
@@ -85,7 +85,8 @@ with open(yellow_model_path, "rb") as f:
 # %% 3. PREDICT AND EVALUATE
 
 # --- Green Taxi ---
-y_pred_green = nn_green.predict(X_test_green)
+y_pred_green_log = nn_green.predict(X_test_green)
+y_pred_green = np.expm1(y_pred_green_log)
 
 rmse_green = np.sqrt(mean_squared_error(y_test_green, y_pred_green))
 mae_green = mean_absolute_error(y_test_green, y_pred_green)
@@ -99,7 +100,8 @@ print(f"R²: {r2_green:.2f}")
 print(f"Accuracy (±$1): {acc_green:.2f}")
 
 # --- Yellow Taxi ---
-y_pred_yellow = nn_yellow.predict(X_test_yellow)
+y_pred_yellow_log = nn_yellow.predict(X_test_yellow)
+y_pred_yellow = np.expm1(y_pred_yellow_log)
 
 rmse_yellow = np.sqrt(mean_squared_error(y_test_yellow, y_pred_yellow))
 mae_yellow = mean_absolute_error(y_test_yellow, y_pred_yellow)
