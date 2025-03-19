@@ -3,7 +3,6 @@ import pandas as pd
 import datetime as datetime
 from sklearn.neural_network import MLPRegressor
 from sklearn.model_selection import RandomizedSearchCV
-from sklearn.preprocessing import StandardScaler
 import pickle
 import os
 
@@ -124,27 +123,6 @@ for FEATURE_SET, (X_feat_green, X_feat_yellow) in feature_sets.items():
     # Reshape targets
     y_train_green = y_train_green.reshape(-1, 1)
     y_train_yellow = y_train_yellow.reshape(-1, 1)
-
-    from sklearn.preprocessing import StandardScaler
-    import pickle
-
-    scaler_green = StandardScaler()
-    scaler_yellow = StandardScaler()
-
-    # Fit and transform training data
-    X_train_green = scaler_green.fit_transform(X_train_green)
-    X_train_yellow = scaler_yellow.fit_transform(X_train_yellow)
-
-    # Transform test data using the same scaler
-    X_test_green = scaler_green.transform(X_test_green)
-    X_test_yellow = scaler_yellow.transform(X_test_yellow)
-
-    # Save the scalers
-    with open(os.path.join(model_dir, "scaler_green.pkl"), "wb") as f:
-        pickle.dump(scaler_green, f)
-
-    with open(os.path.join(model_dir, "scaler_yellow.pkl"), "wb") as f:
-        pickle.dump(scaler_yellow, f)
 
     # Train the model for Green Taxi data
     print("Training Green Taxi Model...")
