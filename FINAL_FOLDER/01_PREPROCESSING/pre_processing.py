@@ -98,7 +98,7 @@ if green_dfs:
     else:
         # -- NEW: Include our new datetime-derived features in numerical_features
         numerical_features = [
-            'fare_amount', 'trip_distance', 'passenger_count', 'tip_amount',
+            'fare_amount', 'trip_distance', 'passenger_count',
             'pickup_hour', 'pickup_dayofweek', 'dropoff_hour', 'dropoff_dayofweek',
         ]
         
@@ -203,7 +203,7 @@ if yellow_dfs:
     else:
         # -- NEW: Include our new datetime-derived features in numerical_features
         numerical_features = [
-            'fare_amount', 'trip_distance', 'passenger_count', 'tip_amount',
+            'fare_amount', 'trip_distance', 'passenger_count',
             'pickup_hour', 'pickup_dayofweek', 'dropoff_hour', 'dropoff_dayofweek'
         ]
         
