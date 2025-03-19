@@ -59,7 +59,7 @@ feature_sets_test = {
 # === Select a Feature Set for Evaluation ===
 # To switch datasets, simply change the value of selected_feature_set below to one of the following options:
 # "full", "fare_trip", "payment_passenger", "location", "no_location", "minimal"
-selected_feature_set = "no_location"  # Change this value as needed
+selected_feature_set = "full"  # Change this value as needed
 
 # Automatically set the test feature arrays based on the selected feature set
 X_test_green = feature_sets_test[selected_feature_set][0]
@@ -171,9 +171,9 @@ plt.legend()
 # Add a single text annotation for both green and yellow metrics
 metrics_text = (
     f"Green Taxi:\n"
-    f"RMSE: {rmse_green:.2f}\nR²: {r2_green:.2f}\n\n"
+    f"RMSE: {rmse_green:.2f}\nR²: {r2_green:.2f}\nMAE: {mae_green:.2f}\n\n"
     f"Yellow Taxi:\n"
-    f"RMSE: {rmse_yellow:.2f}\nR²: {r2_yellow:.2f}"
+    f"RMSE: {rmse_yellow:.2f}\nR²: {r2_yellow:.2f}\nMAE: {mae_yellow:.2f}"
 )
 
 # Place both metrics in one box in the upper left
@@ -198,62 +198,78 @@ from sklearn.inspection import permutation_importance
 # Define a dictionary to map each feature set to its corresponding column names
 feature_names_dict = {
     'full': [
-        'fare_amount', 'trip_distance', 'payment_type', 'passenger_count',
-        'PULocationID', 'DOLocationID', 'RatecodeID', 'congestion_surcharge',
-        'tolls_amount'
+        'Fare Amount', 'Trip Distance', 'Payment Type', 'Passenger Count',
+        'Pick Up Location', 'Drop Off Location', 'Ratecode-ID', 'Surcharges',
+        'Tolls Amount'
     ],
     'fare_trip': [
-        'fare_amount', 'trip_distance', 'tolls_amount'
+        'Fare Amount', 'Trip Distance', 'Tolls Amount'
     ],
     'payment_passenger': [
-        'payment_type', 'passenger_count'
+        'Payment Type', 'Passenger Count'
     ],
     'location': [
-        'PULocationID', 'DOLocationID'
+        'Pick Up Location', 'Drop Off Location'
     ],
     'no_location': [
-        'fare_amount', 'trip_distance', 'payment_type', 'passenger_count',
-        'RatecodeID', 'congestion_surcharge', 'tolls_amount'
+        'Fare Amount', 'Trip Distance', 'Payment Type', 'Passenger Count',
+        'Ratecode-ID', 'Surcharges', 'Tolls Amount'
     ],
     'minimal': [
-        'fare_amount', 'trip_distance'
+        'Fare Amount', 'Trip Distance'
     ]
 }
 
 # Retrieve the chosen feature names based on the selected feature set
 chosen_feature_names = feature_names_dict[selected_feature_set]
 
-print("\n--- Permutation Feature Importance ---")
+# --- Compute Permutation Importances for Both Taxi Types ---
+results_green = permutation_importance(
+    nn_green,
+    X_test_green,
+    y_test_green,
+    scoring="neg_mean_squared_error",
+    n_repeats=5,
+    random_state=42
+)
+importances_green = results_green.importances_mean
+stds_green = results_green.importances_std
 
-for taxi_type, model, X_test, y_test in [
-    ("Green", nn_green, X_test_green, y_test_green),
-    ("Yellow", nn_yellow, X_test_yellow, y_test_yellow)
-]:
-    # Use permutation_importance for each model
-    results = permutation_importance(
-        model,
-        X_test,
-        y_test,
-        scoring="neg_mean_squared_error",
-        n_repeats=5,
-        random_state=42
-    )
+results_yellow = permutation_importance(
+    nn_yellow,
+    X_test_yellow,
+    y_test_yellow,
+    scoring="neg_mean_squared_error",
+    n_repeats=5,
+    random_state=42
+)
+importances_yellow = results_yellow.importances_mean
+stds_yellow = results_yellow.importances_std
 
-    importances = results.importances_mean
-    stds = results.importances_std
+# --- Plot Grouped Bar Chart for Comparison in Sorted Order ---
+# Compute average importance to determine the sorting order
+avg_importances = (importances_green + importances_yellow) / 2
+sorted_idx = np.argsort(avg_importances)[::-1]  # descending order
 
-    print(f"\nPermutation Importances for {taxi_type} Taxi (Feature Set: {selected_feature_set})")
+# Sort the importances, standard deviations, and feature names accordingly
+importances_green_sorted = importances_green[sorted_idx]
+importances_yellow_sorted = importances_yellow[sorted_idx]
+feature_names_sorted = [chosen_feature_names[i] for i in sorted_idx]
 
-    for name, imp, std in zip(chosen_feature_names, importances, stds):
-        print(f"{name:25} | Importance: {imp: .4f} ± {std: .4f}")
+indices = np.arange(len(chosen_feature_names))
+width = 0.35  # width of the bars
 
-    # Plot the permutation importances as a bar chart
-    plt.figure(figsize=(8, 6))
-    indices = np.argsort(importances)[::-1]
+plt.figure(figsize=(10, 6))
 
-    plt.bar(range(len(importances)), importances[indices], yerr=stds[indices], align='center', alpha=0.7, capsize=5)
-    plt.xticks(range(len(importances)), [chosen_feature_names[i] for i in indices], rotation=45, ha='right')
-    plt.title(f'Permutation Importances for {taxi_type} Taxi (Feature Set: {selected_feature_set})')
-    plt.ylabel('Mean Importance Increase')
-    plt.tight_layout()
-    plt.show()
+# Remove 'yerr' and 'capsize' to eliminate error bars
+plt.bar(indices - width/2, importances_green_sorted, width,
+        label='Green Taxi', color='green', alpha=0.7)
+plt.bar(indices + width/2, importances_yellow_sorted, width,
+        label='Yellow Taxi', color='gold', alpha=0.7)
+
+plt.xticks(indices, feature_names_sorted, rotation=45, ha='right')
+plt.ylabel('Mean Importance Increase')
+plt.title(f'Permutation Importances Comparison')
+plt.legend()
+plt.tight_layout()
+plt.show()
