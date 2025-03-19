@@ -192,4 +192,68 @@ plt.legend()
 plt.tight_layout()
 plt.show()
 
-# %%
+# %% 5. PERMUTATION-BASED FEATURE IMPORTANCE
+from sklearn.inspection import permutation_importance
+
+# Define a dictionary to map each feature set to its corresponding column names
+feature_names_dict = {
+    'full': [
+        'fare_amount', 'trip_distance', 'payment_type', 'passenger_count',
+        'PULocationID', 'DOLocationID', 'RatecodeID', 'congestion_surcharge',
+        'tolls_amount'
+    ],
+    'fare_trip': [
+        'fare_amount', 'trip_distance', 'tolls_amount'
+    ],
+    'payment_passenger': [
+        'payment_type', 'passenger_count'
+    ],
+    'location': [
+        'PULocationID', 'DOLocationID'
+    ],
+    'no_location': [
+        'fare_amount', 'trip_distance', 'payment_type', 'passenger_count',
+        'RatecodeID', 'congestion_surcharge', 'tolls_amount'
+    ],
+    'minimal': [
+        'fare_amount', 'trip_distance'
+    ]
+}
+
+# Retrieve the chosen feature names based on the selected feature set
+chosen_feature_names = feature_names_dict[selected_feature_set]
+
+print("\n--- Permutation Feature Importance ---")
+
+for taxi_type, model, X_test, y_test in [
+    ("Green", nn_green, X_test_green, y_test_green),
+    ("Yellow", nn_yellow, X_test_yellow, y_test_yellow)
+]:
+    # Use permutation_importance for each model
+    results = permutation_importance(
+        model,
+        X_test,
+        y_test,
+        scoring="neg_mean_squared_error",
+        n_repeats=5,
+        random_state=42
+    )
+
+    importances = results.importances_mean
+    stds = results.importances_std
+
+    print(f"\nPermutation Importances for {taxi_type} Taxi (Feature Set: {selected_feature_set})")
+
+    for name, imp, std in zip(chosen_feature_names, importances, stds):
+        print(f"{name:25} | Importance: {imp: .4f} ± {std: .4f}")
+
+    # Plot the permutation importances as a bar chart
+    plt.figure(figsize=(8, 6))
+    indices = np.argsort(importances)[::-1]
+
+    plt.bar(range(len(importances)), importances[indices], yerr=stds[indices], align='center', alpha=0.7, capsize=5)
+    plt.xticks(range(len(importances)), [chosen_feature_names[i] for i in indices], rotation=45, ha='right')
+    plt.title(f'Permutation Importances for {taxi_type} Taxi (Feature Set: {selected_feature_set})')
+    plt.ylabel('Mean Importance Increase')
+    plt.tight_layout()
+    plt.show()
