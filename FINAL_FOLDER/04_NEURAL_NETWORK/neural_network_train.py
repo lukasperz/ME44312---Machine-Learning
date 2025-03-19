@@ -64,10 +64,10 @@ X_minimal_yellow = data_yellow_train[['fare_amount', 'trip_distance']].values
 feature_sets = {
     "full": (X_green, X_yellow),
     "fare_trip": (X_fare_trip_green, X_fare_trip_yellow),
-   # "payment_passenger": (X_payment_passenger_green, X_payment_passenger_yellow),
-   # "location": (X_location_green, X_location_yellow),
+    "payment_passenger": (X_payment_passenger_green, X_payment_passenger_yellow),
+    "location": (X_location_green, X_location_yellow),
     "no_location": (X_no_location_green, X_no_location_yellow),
-   # "minimal": (X_minimal_green, X_minimal_yellow),
+    "minimal": (X_minimal_green, X_minimal_yellow),
 }
 
 # Define feature sets for test data using the same columns as the training data
@@ -100,10 +100,10 @@ X_minimal_yellow_test = data_yellow_test[['fare_amount', 'trip_distance']].value
 feature_sets_test = {
     "full": (X_green_test_full, X_yellow_test_full),
     "fare_trip": (X_fare_trip_green_test, X_fare_trip_yellow_test),
-  #  "payment_passenger": (X_payment_passenger_green_test, X_payment_passenger_yellow_test),
+    "payment_passenger": (X_payment_passenger_green_test, X_payment_passenger_yellow_test),
     "location": (X_location_green_test, X_location_yellow_test),
-  # "no_location": (X_no_location_green_test, X_no_location_yellow_test),
-  # "minimal": (X_minimal_green_test, X_minimal_yellow_test),
+    "no_location": (X_no_location_green_test, X_no_location_yellow_test),
+    "minimal": (X_minimal_green_test, X_minimal_yellow_test),
 }
 
 # Loop over every feature set and train models
@@ -124,50 +124,44 @@ for FEATURE_SET, (X_feat_green, X_feat_yellow) in feature_sets.items():
     y_train_green = y_train_green.reshape(-1, 1)
     y_train_yellow = y_train_yellow.reshape(-1, 1)
 
-    # Train the green taxi model:
+    # Train the model for Green Taxi data
     print("Training Green Taxi Model...")
-    # Transform training target to log-scale
-    y_train_green_log = np.log1p(y_train_green)
 
-    # Train the model with the log-transformed target
+    # Train the model 
     nn_green = MLPRegressor(
         hidden_layer_sizes=(128, 64, 32, 16, 8),
         activation='relu',
         solver='adam',
         learning_rate_init=0.01,
-        alpha=0.001,  
+        alpha=0.0001,  
         early_stopping=True,  
         max_iter=1000,
         random_state=0
     )
-    nn_green.fit(X_train_green, y_train_green_log.ravel())
+    nn_green.fit(X_train_green, y_train_green.ravel())
 
     # Later, when making predictions:
-    y_pred_green_log = nn_green.predict(X_test_green)
-    y_pred_green = np.expm1(y_pred_green_log)  # Convert back to the original scale; guaranteed to be nonnegative
+    y_pred_green = nn_green.predict(X_test_green)
     print("Green Taxi Model Training Complete!")
 
-    # Training the model for Yellow Taxi data using GridSearchCV
+    # Training the model for Yellow Taxi data 
     print("Training Yellow Taxi Model...")
-    # Transform training target to log-scale
-    y_train_yellow_log = np.log1p(y_train_yellow)
 
-    # Train the model with the log-transformed target
+    # Train the model 
     nn_yellow = MLPRegressor(
         hidden_layer_sizes=(128, 64, 32, 16, 8),
         activation='relu',
         solver='adam',
         learning_rate_init=0.01,
-        alpha=0.001,  
+        alpha=0.0001,  
         early_stopping=True,  
         max_iter=1000,
         random_state=0
     )
-    nn_yellow.fit(X_train_yellow, y_train_yellow_log.ravel())
+    nn_yellow.fit(X_train_yellow, y_train_yellow.ravel())
 
-    # Later, when making predictions:
-    y_pred_yellow_log = nn_yellow.predict(X_test_yellow)
-    y_pred_yellow = np.expm1(y_pred_yellow_log)  # Convert back to the original scale; guaranteed to be nonnegative
+    # Call upon the trained model
+    y_pred_yellow = nn_yellow.predict(X_test_yellow)
     print("Yellow Taxi Model Training Complete!")
 
     print("Saving models...")
