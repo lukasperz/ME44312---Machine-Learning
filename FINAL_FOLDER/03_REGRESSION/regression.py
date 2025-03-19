@@ -73,7 +73,7 @@ plt.show()
 
 def load_data(filename):
     data_dir = os.getcwd()
-    base_dir = os.path.join(data_dir, os.pardir, "00_DATA")
+    base_dir = os.path.join(data_dir, os.pardir, "FINAL_FOLDER/00_DATA")
     base_dir = os.path.abspath(data_dir)
     file_path = os.path.join(base_dir, filename)
     data = pd.read_parquet(file_path)
@@ -144,7 +144,7 @@ plt.scatter(y_val_green, y_pred_green, color='green', alpha=0.6, label='Green Ta
 
 plt.plot([min(y_val_yellow.min(), y_val_green.min()), max(y_val_yellow.max(), y_val_green.max())],
          [min(y_val_yellow.min(), y_val_green.min()), max(y_val_yellow.max(), y_val_green.max())],
-         'r--', lw=2, label='Pred. = Act.')
+         'k--', lw=2, label='Pred. = Act.')
 
 text_str = f"Yellow MAE: {mae_y:.4f}\nYellow R²: {r2_y:.4f}\nGreen MAE: {mae_g:.4f}\nGreen R²: {r2_g:.4f}"
 plt.text(0.05, 0.85, text_str, transform=plt.gca().transAxes, fontsize=12,
@@ -309,7 +309,7 @@ y_pred_gb_y = gb_model_y.predict(X_val_yellow)
 mae_gb_y = mean_absolute_error(y_val_yellow, y_pred_gb_y)
 r2_gb_y = r2_score(y_val_yellow, y_pred_gb_y)
 
-print(f"Green Gradient Boosting Regression - MAE: {mae_gb_y:.4f}, R² Score: {r2_gb_y:.4f}")
+print(f"Yellow Gradient Boosting Regression - MAE: {mae_gb_y:.4f}, R² Score: {r2_gb_y:.4f}")
 
 gb_model_g = GradientBoostingRegressor(n_estimators=n_estimators, learning_rate=0.1, random_state=random_state)
 gb_model_g.fit(X_train_green, y_train_green)  # Train on training data
@@ -329,7 +329,7 @@ plt.scatter(y_val_green, y_pred_gb_g, color='green', alpha=0.6, label='Green Tax
 
 plt.plot([min(y_val_yellow.min(), y_val_green.min()), max(y_val_yellow.max(), y_val_green.max())],
          [min(y_val_yellow.min(), y_val_green.min()), max(y_val_yellow.max(), y_val_green.max())],
-         'r--', lw=2, label='Pred. = Act.')
+         'k--', lw=2, label='Pred. = Act.')
 
 text_str = (f"Yellow MAE: {mae_gb_y:.4f}\nYellow R²: {r2_gb_y:.4f}\n"
             f"Green MAE: {mae_gb_g:.4f}\nGreen R²: {r2_gb_g:.4f}")
@@ -339,7 +339,7 @@ plt.text(0.05, 0.85, text_str, transform=plt.gca().transAxes, fontsize=12,
 plt.xlabel("Actual Tip Amount")
 plt.ylabel("Predicted Tip Amount")
 plt.title("Gradient Boosting: Predicted vs. Actual Tip Amount for Yellow and Green Taxis")
-plt.legend()
+plt.legend(loc="upper right")
 plt.show()
 
 
@@ -354,7 +354,7 @@ theta1, theta2 = float(feature_importance_y[0]), float(feature_importance_y[1]) 
 theta0 = float(gb_model_y.init_.constant_.ravel()[0]) if hasattr(gb_model_y.init_, "constant_") else 0  # Extract first value properly as a scalar
 
 # Print the Approximate Regression Formula
-print(f"\nYellow Approximate Regression Formula:")
+print(f"\nFinal Yellow Approximate Regression Formula:")
 print(f"Yellow Tip Amount ≈ {theta0:.4f} + ({theta1:.4f} * trip_distance) + ({theta2:.4f} * fare_amount)")
 
 
@@ -367,5 +367,5 @@ theta1, theta2 = float(feature_importance_g[0]), float(feature_importance_g[1]) 
 theta0 = float(gb_model_g.init_.constant_.ravel()[0]) if hasattr(gb_model_g.init_, "constant_") else 0  # Extract first value properly as a scalar
 
 # Print the Approximate Regression Formula
-print(f"\nYellow Approximate Regression Formula:")
+print(f"\nFinal Green Approximate Regression Formula:")
 print(f"Yellow Tip Amount ≈ {theta0:.4f} + ({theta1:.4f} * trip_distance) + ({theta2:.4f} * fare_amount)")
