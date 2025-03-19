@@ -1,11 +1,9 @@
 import numpy as np
 import pandas as pd
 import datetime as datetime
-from sklearn.preprocessing import StandardScaler, LabelEncoder
 from sklearn.neural_network import MLPRegressor
+from sklearn.model_selection import RandomizedSearchCV
 import pickle
-import sys
-import traceback
 import os
 
 model_dir = os.path.dirname(os.path.abspath(__file__))
@@ -26,86 +24,130 @@ y_green = data_green_train['tip_amount'].values
 y_yellow = data_yellow_train['tip_amount'].values
 
 # %% FEATURE SETS Definition
-# Define different feature sets for both datasets
 
-# Full feature set using all potentially useful variables
-X_green = data_green_train[['fare_amount', 'trip_distance', 'payment_type', 'passenger_count',
-                             'PULocationID', 'DOLocationID', 'RatecodeID', 'congestion_surcharge',
-                             'tolls_amount']].values
+# --- NEW: OLD FEATURE SET (everything from "full" without time-related columns) ---
+X_green_old = data_green_train[[
+    'fare_amount', 'trip_distance', 'payment_type', 'passenger_count',
+    'PULocationID', 'DOLocationID', 'RatecodeID', 'congestion_surcharge',
+    'tolls_amount'
+]].values
 
-X_yellow = data_yellow_train[['fare_amount', 'trip_distance', 'payment_type', 'passenger_count',
-                               'PULocationID', 'DOLocationID', 'RatecodeID', 'congestion_surcharge',
-                               'tolls_amount']].values
+X_yellow_old = data_yellow_train[[
+    'fare_amount', 'trip_distance', 'payment_type', 'passenger_count',
+    'PULocationID', 'DOLocationID', 'RatecodeID', 'congestion_surcharge',
+    'tolls_amount'
+]].values
 
-# Feature set focusing on fare and trip details
-X_fare_trip_green = data_green_train[['fare_amount', 'trip_distance', 'tolls_amount']].values
-X_fare_trip_yellow = data_yellow_train[['fare_amount', 'trip_distance', 'tolls_amount']].values
+# --- 1) FULL FEATURE SET WITH ADDITIONAL TIME COLUMNS ---
+X_green = data_green_train[[
+    'fare_amount', 'trip_distance', 'payment_type', 'passenger_count',
+    'PULocationID', 'DOLocationID', 'RatecodeID', 'congestion_surcharge',
+    'tolls_amount',
+    # Added time-related columns:
+    'pickup_hour', 'dropoff_hour', 'pickup_dayofweek'
+]].values
 
-# Feature set focusing on payment and passenger details
-X_payment_passenger_green = data_green_train[['payment_type', 'passenger_count']].values
-X_payment_passenger_yellow = data_yellow_train[['payment_type', 'passenger_count']].values
+X_yellow = data_yellow_train[[
+    'fare_amount', 'trip_distance', 'payment_type', 'passenger_count',
+    'PULocationID', 'DOLocationID', 'RatecodeID', 'congestion_surcharge',
+    'tolls_amount',
+    # Added time-related columns:
+    'pickup_hour', 'dropoff_hour', 'pickup_dayofweek'
+]].values
 
-# Feature set with location-based data
-X_location_green = data_green_train[['PULocationID', 'DOLocationID']].values
-X_location_yellow = data_yellow_train[['PULocationID', 'DOLocationID']].values
+# Feature set excluding location (unchanged)
+X_no_location_green = data_green_train[[
+    'fare_amount', 'trip_distance', 'payment_type',
+    'passenger_count', 'RatecodeID', 'congestion_surcharge',
+    'tolls_amount'
+]].values
 
-# Feature set excluding location but keeping financial and trip details
-X_no_location_green = data_green_train[['fare_amount', 'trip_distance', 'payment_type', 
-                                        'passenger_count', 'RatecodeID', 'congestion_surcharge', 
-                                        'tolls_amount']].values
+X_no_location_yellow = data_yellow_train[[
+    'fare_amount', 'trip_distance', 'payment_type',
+    'passenger_count', 'RatecodeID', 'congestion_surcharge',
+    'tolls_amount'
+]].values
 
-X_no_location_yellow = data_yellow_train[['fare_amount', 'trip_distance', 'payment_type', 
-                                          'passenger_count', 'RatecodeID', 'congestion_surcharge', 
-                                          'tolls_amount']].values
-
-# Minimal feature set for quick testing
+# Minimal feature set (unchanged)
 X_minimal_green = data_green_train[['fare_amount', 'trip_distance']].values
 X_minimal_yellow = data_yellow_train[['fare_amount', 'trip_distance']].values
 
-# Define all feature sets
+# --- 3) NEW TIME-RELATED FEATURE SET ---
+X_time_green = data_green_train[[
+    'pickup_hour', 'dropoff_hour', 'pickup_dayofweek'
+]].values
+
+X_time_yellow = data_yellow_train[[
+    'pickup_hour', 'dropoff_hour', 'pickup_dayofweek'
+]].values
+
+# Define all feature sets (order matters: "old" is the first to be trained)
 feature_sets = {
+    "old": (X_green_old, X_yellow_old),
     "full": (X_green, X_yellow),
-    "fare_trip": (X_fare_trip_green, X_fare_trip_yellow),
-    "payment_passenger": (X_payment_passenger_green, X_payment_passenger_yellow),
-    "location": (X_location_green, X_location_yellow),
     "no_location": (X_no_location_green, X_no_location_yellow),
     "minimal": (X_minimal_green, X_minimal_yellow),
+    "time_features": (X_time_green, X_time_yellow)
 }
 
 # Define feature sets for test data using the same columns as the training data
-X_green_test_full = data_green_test[['fare_amount', 'trip_distance', 'payment_type', 'passenger_count',
-                                      'PULocationID', 'DOLocationID', 'RatecodeID', 'congestion_surcharge',
-                                      'tolls_amount']].values
-X_yellow_test_full = data_yellow_test[['fare_amount', 'trip_distance', 'payment_type', 'passenger_count',
-                                        'PULocationID', 'DOLocationID', 'RatecodeID', 'congestion_surcharge',
-                                        'tolls_amount']].values
 
-X_fare_trip_green_test = data_green_test[['fare_amount', 'trip_distance', 'tolls_amount']].values
-X_fare_trip_yellow_test = data_yellow_test[['fare_amount', 'trip_distance', 'tolls_amount']].values
+# "old" test set (without time-related features)
+X_green_test_old = data_green_test[[
+    'fare_amount', 'trip_distance', 'payment_type', 'passenger_count',
+    'PULocationID', 'DOLocationID', 'RatecodeID', 'congestion_surcharge',
+    'tolls_amount'
+]].values
 
-X_payment_passenger_green_test = data_green_test[['payment_type', 'passenger_count']].values
-X_payment_passenger_yellow_test = data_yellow_test[['payment_type', 'passenger_count']].values
+X_yellow_test_old = data_yellow_test[[
+    'fare_amount', 'trip_distance', 'payment_type', 'passenger_count',
+    'PULocationID', 'DOLocationID', 'RatecodeID', 'congestion_surcharge',
+    'tolls_amount'
+]].values
 
-X_location_green_test = data_green_test[['PULocationID', 'DOLocationID']].values
-X_location_yellow_test = data_yellow_test[['PULocationID', 'DOLocationID']].values
+# "full" test set with time-related columns
+X_green_test_full = data_green_test[[
+    'fare_amount', 'trip_distance', 'payment_type', 'passenger_count',
+    'PULocationID', 'DOLocationID', 'RatecodeID', 'congestion_surcharge',
+    'tolls_amount', 'pickup_hour', 'dropoff_hour', 'pickup_dayofweek'
+]].values
 
-X_no_location_green_test = data_green_test[['fare_amount', 'trip_distance', 'payment_type', 
-                                            'passenger_count', 'RatecodeID', 'congestion_surcharge', 
-                                            'tolls_amount']].values
-X_no_location_yellow_test = data_yellow_test[['fare_amount', 'trip_distance', 'payment_type', 
-                                              'passenger_count', 'RatecodeID', 'congestion_surcharge', 
-                                              'tolls_amount']].values
+X_yellow_test_full = data_yellow_test[[
+    'fare_amount', 'trip_distance', 'payment_type', 'passenger_count',
+    'PULocationID', 'DOLocationID', 'RatecodeID', 'congestion_surcharge',
+    'tolls_amount', 'pickup_hour', 'dropoff_hour', 'pickup_dayofweek'
+]].values
+
+X_no_location_green_test = data_green_test[[
+    'fare_amount', 'trip_distance', 'payment_type',
+    'passenger_count', 'RatecodeID', 'congestion_surcharge',
+    'tolls_amount'
+]].values
+
+X_no_location_yellow_test = data_yellow_test[[
+    'fare_amount', 'trip_distance', 'payment_type',
+    'passenger_count', 'RatecodeID', 'congestion_surcharge',
+    'tolls_amount'
+]].values
 
 X_minimal_green_test = data_green_test[['fare_amount', 'trip_distance']].values
 X_minimal_yellow_test = data_yellow_test[['fare_amount', 'trip_distance']].values
 
+# "time_features" test set (only time-related columns)
+X_time_green_test = data_green_test[[
+    'pickup_hour', 'dropoff_hour', 'pickup_dayofweek'
+]].values
+X_time_yellow_test = data_yellow_test[[
+    'pickup_hour', 'dropoff_hour', 'pickup_dayofweek'
+]].values
+
+# Corresponding test data feature sets dictionary (with "old" first)
 feature_sets_test = {
+    "old": (X_green_test_old, X_yellow_test_old),
     "full": (X_green_test_full, X_yellow_test_full),
-    "fare_trip": (X_fare_trip_green_test, X_fare_trip_yellow_test),
-    "payment_passenger": (X_payment_passenger_green_test, X_payment_passenger_yellow_test),
-    "location": (X_location_green_test, X_location_yellow_test),
     "no_location": (X_no_location_green_test, X_no_location_yellow_test),
     "minimal": (X_minimal_green_test, X_minimal_yellow_test),
+    "time_features": (X_time_green_test, X_time_yellow_test)
 }
 
 # Loop over every feature set and train models
@@ -126,30 +168,41 @@ for FEATURE_SET, (X_feat_green, X_feat_yellow) in feature_sets.items():
     y_train_green = y_train_green.reshape(-1, 1)
     y_train_yellow = y_train_yellow.reshape(-1, 1)
 
-    # Training the model for Green Taxi data
+    # Train the model for Green Taxi data
+    print("Training Green Taxi Model...")
+
     nn_green = MLPRegressor(
         hidden_layer_sizes=(128, 64, 32, 16, 8),
         activation='relu',
         solver='adam',
         learning_rate_init=0.01,
+        alpha=0.0001,
+        early_stopping=True,
         max_iter=1000,
         random_state=0
     )
     nn_green.fit(X_train_green, y_train_green.ravel())
+    y_pred_green = nn_green.predict(X_test_green)
+    print("Green Taxi Model Training Complete!")
 
-    # Training the model for Yellow Taxi data
+    # Train the model for Yellow Taxi data
     print("Training Yellow Taxi Model...")
+
     nn_yellow = MLPRegressor(
         hidden_layer_sizes=(128, 64, 32, 16, 8),
         activation='relu',
         solver='adam',
         learning_rate_init=0.01,
+        alpha=0.0001,
+        early_stopping=True,
         max_iter=1000,
         random_state=0
     )
     nn_yellow.fit(X_train_yellow, y_train_yellow.ravel())
+    y_pred_yellow = nn_yellow.predict(X_test_yellow)
     print("Yellow Taxi Model Training Complete!")
 
+    # Save models
     print("Saving models...")
     with open(os.path.join(model_dir, f"nn_green_{FEATURE_SET}.pkl"), "wb") as f:
         pickle.dump(nn_green, f)
@@ -159,10 +212,14 @@ for FEATURE_SET, (X_feat_green, X_feat_yellow) in feature_sets.items():
 
     # Evaluate the models on test data
     print("Evaluating Models...")
-    y_pred_green = nn_green.predict(X_test_green)
-    y_pred_yellow = nn_yellow.predict(X_test_yellow)
+    y_pred_green_log = nn_green.predict(X_test_green)
+    y_pred_green = np.expm1(y_pred_green_log)
+    y_pred_yellow_log = nn_yellow.predict(X_test_yellow)
+    y_pred_yellow = np.expm1(y_pred_yellow_log)
+
     test_loss_green = np.mean((y_pred_green - y_test_green) ** 2)
     test_loss_yellow = np.mean((y_pred_yellow - y_test_yellow) ** 2)
+
     print(f"\nGreen Taxi Model - Test Loss (MSE): {test_loss_green:.6f}")
     print(f"Yellow Taxi Model - Test Loss (MSE): {test_loss_yellow:.6f}")
     print(f"Completed training for feature set: {FEATURE_SET}\n")
