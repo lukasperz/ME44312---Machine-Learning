@@ -10,17 +10,17 @@ from sklearn.metrics import mean_absolute_error, r2_score
 
 # Get the current working directory
 data_dir = os.getcwd()
-base_dir = os.path.join(data_dir, os.pardir, "00_DATA")
+base_dir = os.path.join(data_dir, os.pardir, "FINAL_FOLDER/00_DATA")
 base_dir = os.path.abspath(data_dir)
 
 # Load Yellow Taxi Data
-yellow_file_path = os.path.join(base_dir, "yellow_taxi_data.parquet")
+yellow_file_path = 'FINAL_FOLDER/00_DATA/yellow_taxi_data_NO_SCALE.parquet'
 yellow_data = pd.read_parquet(yellow_file_path)
 yellow_data = yellow_data[['trip_distance', 'fare_amount', 'tip_amount', 'passenger_count']]
 yellow_filtered_data = yellow_data[yellow_data['tip_amount'] > 0]
 
 # Load Green Taxi Data
-green_file_path = os.path.join(base_dir, "green_taxi_data.parquet")
+green_file_path = 'FINAL_FOLDER/00_DATA/green_taxi_data_NO_SCALE.parquet'
 green_data = pd.read_parquet(green_file_path)
 green_data = green_data[['trip_distance', 'fare_amount', 'tip_amount', 'passenger_count']]
 green_filtered_data = green_data[green_data['tip_amount'] > 0]
@@ -80,8 +80,8 @@ def load_data(filename):
     data = data[['trip_distance', 'fare_amount', 'tip_amount']]
     return data
 
-yellow_data = load_data("yellow_taxi_data.parquet")
-green_data = load_data("green_taxi_data.parquet")
+yellow_data = load_data('FINAL_FOLDER/00_DATA/yellow_taxi_data_NO_SCALE.parquet')
+green_data = load_data('FINAL_FOLDER/00_DATA/green_taxi_data_NO_SCALE.parquet')
 
 features = ['trip_distance', 'fare_amount']
 target = 'tip_amount'
