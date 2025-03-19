@@ -88,7 +88,7 @@ if green_dfs:
     df_filtered = df  # Updated line to remove second filtering step
     
     # Label encoding for categorical features
-    from sklearn.preprocessing import LabelEncoder, StandardScaler
+    from sklearn.preprocessing import LabelEncoder
     categorical_features = ['payment_type', 'store_and_fwd_flag', 'PULocationID', 'DOLocationID']
     LE = LabelEncoder()
     for col in categorical_features:
@@ -99,11 +99,6 @@ if green_dfs:
     if df_filtered.empty:
         print("No valid rows for green taxi data after filtering. Skipping scaling and train/test split.")
     else:
-        # Scaling numerical features
-        numerical_features = ['fare_amount', 'trip_distance', 'passenger_count', 'tip_amount']
-        scaler = StandardScaler()
-        df_filtered[numerical_features] = scaler.fit_transform(df_filtered[numerical_features])
-        
         # Split the data into train (80%) and test (20%) sets
         from sklearn.model_selection import train_test_split
         train_df, test_df = train_test_split(df_filtered, test_size=0.2, random_state=42)
@@ -162,7 +157,7 @@ if yellow_dfs:
     df_filtered = df  # Updated line to remove second filtering step
     
     # Label encoding for categorical features
-    from sklearn.preprocessing import LabelEncoder, StandardScaler
+    from sklearn.preprocessing import LabelEncoder
     categorical_features = ['payment_type', 'store_and_fwd_flag', 'PULocationID', 'DOLocationID']
     LE = LabelEncoder()
     for col in categorical_features:
@@ -173,11 +168,6 @@ if yellow_dfs:
     if df_filtered.empty:
         print("No valid rows for yellow taxi data after filtering. Skipping scaling and train/test split.")
     else:
-        # Scaling numerical features
-        numerical_features = ['fare_amount', 'trip_distance', 'passenger_count', 'tip_amount']
-        scaler = StandardScaler()
-        df_filtered[numerical_features] = scaler.fit_transform(df_filtered[numerical_features])
-        
         # Split the data into train (80%) and test (20%) sets
         from sklearn.model_selection import train_test_split
         train_df, test_df = train_test_split(df_filtered, test_size=0.2, random_state=42)

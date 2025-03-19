@@ -5,6 +5,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from sklearn.metrics import mean_squared_error, r2_score, mean_absolute_error
 from pyarrow import parquet as pq
+from sklearn.preprocessing import StandardScaler
 
 def accuracy_within_threshold(y_true, y_pred, threshold=1.0):
     """
@@ -84,8 +85,19 @@ with open(yellow_model_path, "rb") as f:
 
 # %% 3. PREDICT AND EVALUATE
 
+# Load the saved scalers
+scaler_green_path = "FINAL_FOLDER/04_NEURAL_NETWORK/scaler_green.pkl"
+scaler_yellow_path = "FINAL_FOLDER/04_NEURAL_NETWORK/scaler_yellow.pkl"
+
+with open(scaler_green_path, "rb") as f:
+    scaler_green = pickle.load(f)
+
+with open(scaler_yellow_path, "rb") as f:
+    scaler_yellow = pickle.load(f)
+
 # --- Green Taxi ---
-y_pred_green = nn_green.predict(X_test_green)
+y_pred_green_scaled = nn_green.predict(X_test_green).reshape(-1, 1)
+y_pred_green = scaler_green.inverse_transform(y_pred_green_scaled)[:, 0]
 
 rmse_green = np.sqrt(mean_squared_error(y_test_green, y_pred_green))
 mae_green = mean_absolute_error(y_test_green, y_pred_green)
@@ -99,7 +111,8 @@ print(f"R²: {r2_green:.2f}")
 print(f"Accuracy (±$1): {acc_green:.2f}")
 
 # --- Yellow Taxi ---
-y_pred_yellow = nn_yellow.predict(X_test_yellow)
+y_pred_yellow_scaled = nn_yellow.predict(X_test_yellow).reshape(-1, 1)
+y_pred_yellow = scaler_yellow.inverse_transform(y_pred_yellow_scaled)[:, 0]
 
 rmse_yellow = np.sqrt(mean_squared_error(y_test_yellow, y_pred_yellow))
 mae_yellow = mean_absolute_error(y_test_yellow, y_pred_yellow)
