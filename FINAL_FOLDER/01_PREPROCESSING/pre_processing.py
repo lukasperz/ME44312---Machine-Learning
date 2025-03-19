@@ -55,6 +55,23 @@ for file_path in green_files:
                      (df['fare_amount'] > 0) &
                      (df['passenger_count'] > 0) &
                      (df['tip_amount'] >= 0)]
+    
+    # Remove outliers from the 'fare_amount' column using the IQR method
+    Q1 = df_filtered['fare_amount'].quantile(0.15)
+    Q3 = df_filtered['fare_amount'].quantile(0.85)
+    IQR = Q3 - Q1
+    lower_bound = Q1 - 1.5 * IQR
+    upper_bound = Q3 + 1.5 * IQR
+    df_filtered = df_filtered[(df_filtered['fare_amount'] >= lower_bound) & (df_filtered['fare_amount'] <= upper_bound)]
+
+    # Remove outliers from the 'tip_amount' column using the IQR method
+    Q1_tip = df_filtered['tip_amount'].quantile(0.15)
+    Q3_tip = df_filtered['tip_amount'].quantile(0.85)
+    IQR_tip = Q3_tip - Q1_tip
+    lower_bound_tip = Q1_tip - 1.5 * IQR_tip
+    upper_bound_tip = Q3_tip + 1.5 * IQR_tip
+    df_filtered = df_filtered[(df_filtered['tip_amount'] >= lower_bound_tip) & (df_filtered['tip_amount'] <= upper_bound_tip)]
+
     # Sample 7500 rows from the filtered data if available
     if len(df_filtered) > 7500:
         df_filtered = df_filtered.sample(n=7500, random_state=42)
@@ -112,6 +129,23 @@ for file_path in yellow_files:
                      (df['fare_amount'] > 0) &
                      (df['passenger_count'] > 0) &
                      (df['tip_amount'] >= 0)]
+    
+    # Remove outliers from the 'fare_amount' column using the IQR method
+    Q1 = df_filtered['fare_amount'].quantile(0.15)
+    Q3 = df_filtered['fare_amount'].quantile(0.85)
+    IQR = Q3 - Q1
+    lower_bound = Q1 - 1.5 * IQR
+    upper_bound = Q3 + 1.5 * IQR
+    df_filtered = df_filtered[(df_filtered['fare_amount'] >= lower_bound) & (df_filtered['fare_amount'] <= upper_bound)]
+
+    # Remove outliers from the 'tip_amount' column using the IQR method
+    Q1_tip = df_filtered['tip_amount'].quantile(0.15)
+    Q3_tip = df_filtered['tip_amount'].quantile(0.85)
+    IQR_tip = Q3_tip - Q1_tip
+    lower_bound_tip = Q1_tip - 1.5 * IQR_tip
+    upper_bound_tip = Q3_tip + 1.5 * IQR_tip
+    df_filtered = df_filtered[(df_filtered['tip_amount'] >= lower_bound_tip) & (df_filtered['tip_amount'] <= upper_bound_tip)]
+
     # Sample 7500 rows from the filtered data if available
     if len(df_filtered) > 7500:
         df_filtered = df_filtered.sample(n=7500, random_state=42)
