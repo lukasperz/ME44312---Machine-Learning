@@ -1,24 +1,3 @@
-"""
-Preprocessing Script for Taxi Data Tip Prediction
-
-This script processes green and yellow taxi Parquet files by performing the following steps:
-
-1. Reads all relevant Parquet files from a specified directory.
-2. For each file, applies filtering to retain only rows where:
-   - trip_distance > 0
-   - fare_amount > 0
-   - passenger_count > 0
-   - tip_amount >= 0
-3. From each file that passes the filter, up to 7500 rows are sampled.
-4. The sampled data from each file is combined into a single DataFrame per taxi type (green and yellow).
-5. The combined DataFrame is preprocessed by:
-   - Applying label encoding to categorical features (payment_type, store_and_fwd_flag, PULocationID, DOLocationID).
-   - Scaling numerical features (fare_amount, trip_distance, passenger_count, tip_amount).
-   - Splitting the data into training (80%) and testing (20%) sets.
-6. The final combined, train, and test datasets are saved in the same directory as this script.
-
-This script is organized into separate sections for processing green and yellow taxi data, with inline comments explaining each step.
-"""
 
 import os
 import pandas as pd
@@ -88,7 +67,7 @@ if green_dfs:
     df_filtered = df  # Updated line to remove second filtering step
     
     # Label encoding for categorical features
-    from sklearn.preprocessing import LabelEncoder
+    from sklearn.preprocessing import LabelEncoder, StandardScaler
     categorical_features = ['payment_type', 'store_and_fwd_flag', 'PULocationID', 'DOLocationID']
     LE = LabelEncoder()
     for col in categorical_features:
@@ -99,6 +78,11 @@ if green_dfs:
     if df_filtered.empty:
         print("No valid rows for green taxi data after filtering. Skipping scaling and train/test split.")
     else:
+        # Scaling numerical features
+        numerical_features = ['fare_amount', 'trip_distance', 'passenger_count', 'tip_amount']
+        scaler = StandardScaler()
+        df_filtered[numerical_features] = scaler.fit_transform(df_filtered[numerical_features])
+        
         # Split the data into train (80%) and test (20%) sets
         from sklearn.model_selection import train_test_split
         train_df, test_df = train_test_split(df_filtered, test_size=0.2, random_state=42)
@@ -157,7 +141,7 @@ if yellow_dfs:
     df_filtered = df  # Updated line to remove second filtering step
     
     # Label encoding for categorical features
-    from sklearn.preprocessing import LabelEncoder
+    from sklearn.preprocessing import LabelEncoder, StandardScaler
     categorical_features = ['payment_type', 'store_and_fwd_flag', 'PULocationID', 'DOLocationID']
     LE = LabelEncoder()
     for col in categorical_features:
@@ -168,6 +152,11 @@ if yellow_dfs:
     if df_filtered.empty:
         print("No valid rows for yellow taxi data after filtering. Skipping scaling and train/test split.")
     else:
+        # Scaling numerical features
+        numerical_features = ['fare_amount', 'trip_distance', 'passenger_count', 'tip_amount']
+        scaler = StandardScaler()
+        df_filtered[numerical_features] = scaler.fit_transform(df_filtered[numerical_features])
+        
         # Split the data into train (80%) and test (20%) sets
         from sklearn.model_selection import train_test_split
         train_df, test_df = train_test_split(df_filtered, test_size=0.2, random_state=42)
