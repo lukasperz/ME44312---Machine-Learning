@@ -10,11 +10,11 @@ main_folder_path = os.path.abspath(os.path.join(os.getcwd(), '..', '..', 'FINAL_
 data_folder_path = os.path.join(main_folder_path, "00_DATA")
 
 # === 2️⃣ Load the Parquet Files ===
-green_taxi = pd.read_parquet(os.path.join(data_folder_path, "green_taxi_data_NO_SCALE.parquet"))
-yellow_taxi = pd.read_parquet(os.path.join(data_folder_path, "yellow_taxi_data_NO_SCALE.parquet"))
+green_taxi = pd.read_parquet('FINAL_FOLDER/00_DATA/green_taxi_data_NO_SCALE.parquet')
+yellow_taxi = pd.read_parquet('FINAL_FOLDER/00_DATA/yellow_taxi_data_NO_SCALE.parquet')
 
 # === 3️⃣ Load NYC Taxi Zone Shapefile ===
-shapefile_path = os.path.join(main_folder_path, "02_VISUALIZATION", "Taxi Zones", "taxi_zones.shp")
+shapefile_path = 'FINAL_FOLDER/02_VISUALIZATION/Taxi Zones/taxi_zones.shp'
 taxi_zones = gpd.read_file(shapefile_path)
 
 # ✅ Compute accurate centroids
