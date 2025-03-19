@@ -118,7 +118,8 @@ print(f"Accuracy (±$1): {acc_yellow:.2f}")
 residuals_green = y_test_green - y_pred_green
 residuals_yellow = y_test_yellow - y_pred_yellow
 
-# Define a function to compute a mask for outliers using the IQR method
+# Define a function to compute a mask for outliers using the IQR method 
+# --> Only applied to the plot and not to the resulting MAE, R^2, RMSE values...
 def get_outlier_mask(residuals):
     q1 = np.percentile(residuals, 15)
     q3 = np.percentile(residuals, 85)
@@ -170,9 +171,9 @@ plt.legend()
 # Add a single text annotation for both green and yellow metrics
 metrics_text = (
     f"Green Taxi:\n"
-    f"RMSE: {rmse_green:.2f}\nR²: {r2_green:.2f}\n\n"
+    f"RMSE: {rmse_green:.2f}\nR²: {r2_green:.2f}\nMAE: {mae_green:.2f}\n\n"
     f"Yellow Taxi:\n"
-    f"RMSE: {rmse_yellow:.2f}\nR²: {r2_yellow:.2f}"
+    f"RMSE: {rmse_yellow:.2f}\nR²: {r2_yellow:.2f}\nMAE: {mae_yellow:.2f}"
 )
 
 # Place both metrics in one box in the upper left
@@ -188,5 +189,87 @@ plt.ylabel('Frequency')
 plt.title('Residual Distribution')
 plt.legend()
 
+plt.tight_layout()
+plt.show()
+
+# %% 5. PERMUTATION-BASED FEATURE IMPORTANCE
+from sklearn.inspection import permutation_importance
+
+# Define a dictionary to map each feature set to its corresponding column names
+feature_names_dict = {
+    'full': [
+        'Fare Amount', 'Trip Distance', 'Payment Type', 'Passenger Count',
+        'Pick Up Location', 'Drop Off Location', 'Ratecode-ID', 'Surcharges',
+        'Tolls Amount'
+    ],
+    'fare_trip': [
+        'Fare Amount', 'Trip Distance', 'Tolls Amount'
+    ],
+    'payment_passenger': [
+        'Payment Type', 'Passenger Count'
+    ],
+    'location': [
+        'Pick Up Location', 'Drop Off Location'
+    ],
+    'no_location': [
+        'Fare Amount', 'Trip Distance', 'Payment Type', 'Passenger Count',
+        'Ratecode-ID', 'Surcharges', 'Tolls Amount'
+    ],
+    'minimal': [
+        'Fare Amount', 'Trip Distance'
+    ]
+}
+
+# Retrieve the chosen feature names based on the selected feature set
+chosen_feature_names = feature_names_dict[selected_feature_set]
+
+# --- Compute Permutation Importances for Both Taxi Types ---
+results_green = permutation_importance(
+    nn_green,
+    X_test_green,
+    y_test_green,
+    scoring="neg_mean_squared_error",
+    n_repeats=5,
+    random_state=42
+)
+importances_green = results_green.importances_mean
+stds_green = results_green.importances_std
+
+results_yellow = permutation_importance(
+    nn_yellow,
+    X_test_yellow,
+    y_test_yellow,
+    scoring="neg_mean_squared_error",
+    n_repeats=5,
+    random_state=42
+)
+importances_yellow = results_yellow.importances_mean
+stds_yellow = results_yellow.importances_std
+
+# --- Plot Grouped Bar Chart for Comparison in Sorted Order ---
+# Compute average importance to determine the sorting order
+avg_importances = (importances_green + importances_yellow) / 2
+sorted_idx = np.argsort(avg_importances)[::-1]  # descending order
+
+# Sort the importances, standard deviations, and feature names accordingly
+importances_green_sorted = importances_green[sorted_idx]
+importances_yellow_sorted = importances_yellow[sorted_idx]
+feature_names_sorted = [chosen_feature_names[i] for i in sorted_idx]
+
+indices = np.arange(len(chosen_feature_names))
+width = 0.35  # width of the bars
+
+plt.figure(figsize=(10, 6))
+
+# Remove 'yerr' and 'capsize' to eliminate error bars
+plt.bar(indices - width/2, importances_green_sorted, width,
+        label='Green Taxi', color='green', alpha=0.7)
+plt.bar(indices + width/2, importances_yellow_sorted, width,
+        label='Yellow Taxi', color='gold', alpha=0.7)
+
+plt.xticks(indices, feature_names_sorted, rotation=45, ha='right')
+plt.ylabel('Mean Importance Increase')
+plt.title(f'Permutation Importances Comparison')
+plt.legend()
 plt.tight_layout()
 plt.show()

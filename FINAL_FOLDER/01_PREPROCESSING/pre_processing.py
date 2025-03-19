@@ -1,24 +1,3 @@
-"""
-Preprocessing Script for Taxi Data Tip Prediction
-
-This script processes green and yellow taxi Parquet files by performing the following steps:
-
-1. Reads all relevant Parquet files from a specified directory.
-2. For each file, applies filtering to retain only rows where:
-   - trip_distance > 0
-   - fare_amount > 0
-   - passenger_count > 0
-   - tip_amount >= 0
-3. From each file that passes the filter, up to 7500 rows are sampled.
-4. The sampled data from each file is combined into a single DataFrame per taxi type (green and yellow).
-5. The combined DataFrame is preprocessed by:
-   - Applying label encoding to categorical features (payment_type, store_and_fwd_flag, PULocationID, DOLocationID).
-   - Scaling numerical features (fare_amount, trip_distance, passenger_count, tip_amount).
-   - Splitting the data into training (80%) and testing (20%) sets.
-6. The final combined, train, and test datasets are saved in the same directory as this script.
-
-This script is organized into separate sections for processing green and yellow taxi data, with inline comments explaining each step.
-"""
 
 import os
 import pandas as pd
@@ -55,6 +34,23 @@ for file_path in green_files:
                      (df['fare_amount'] > 0) &
                      (df['passenger_count'] > 0) &
                      (df['tip_amount'] >= 0)]
+    
+    # Remove outliers from the 'fare_amount' column using the IQR method
+    Q1 = df_filtered['fare_amount'].quantile(0.15)
+    Q3 = df_filtered['fare_amount'].quantile(0.85)
+    IQR = Q3 - Q1
+    lower_bound = Q1 - 1.5 * IQR
+    upper_bound = Q3 + 1.5 * IQR
+    df_filtered = df_filtered[(df_filtered['fare_amount'] >= lower_bound) & (df_filtered['fare_amount'] <= upper_bound)]
+
+    # Remove outliers from the 'tip_amount' column using the IQR method
+    Q1_tip = df_filtered['tip_amount'].quantile(0.15)
+    Q3_tip = df_filtered['tip_amount'].quantile(0.85)
+    IQR_tip = Q3_tip - Q1_tip
+    lower_bound_tip = Q1_tip - 1.5 * IQR_tip
+    upper_bound_tip = Q3_tip + 1.5 * IQR_tip
+    df_filtered = df_filtered[(df_filtered['tip_amount'] >= lower_bound_tip) & (df_filtered['tip_amount'] <= upper_bound_tip)]
+
     # Sample 7500 rows from the filtered data if available
     if len(df_filtered) > 7500:
         df_filtered = df_filtered.sample(n=7500, random_state=42)
@@ -112,6 +108,23 @@ for file_path in yellow_files:
                      (df['fare_amount'] > 0) &
                      (df['passenger_count'] > 0) &
                      (df['tip_amount'] >= 0)]
+    
+    # Remove outliers from the 'fare_amount' column using the IQR method
+    Q1 = df_filtered['fare_amount'].quantile(0.15)
+    Q3 = df_filtered['fare_amount'].quantile(0.85)
+    IQR = Q3 - Q1
+    lower_bound = Q1 - 1.5 * IQR
+    upper_bound = Q3 + 1.5 * IQR
+    df_filtered = df_filtered[(df_filtered['fare_amount'] >= lower_bound) & (df_filtered['fare_amount'] <= upper_bound)]
+
+    # Remove outliers from the 'tip_amount' column using the IQR method
+    Q1_tip = df_filtered['tip_amount'].quantile(0.15)
+    Q3_tip = df_filtered['tip_amount'].quantile(0.85)
+    IQR_tip = Q3_tip - Q1_tip
+    lower_bound_tip = Q1_tip - 1.5 * IQR_tip
+    upper_bound_tip = Q3_tip + 1.5 * IQR_tip
+    df_filtered = df_filtered[(df_filtered['tip_amount'] >= lower_bound_tip) & (df_filtered['tip_amount'] <= upper_bound_tip)]
+
     # Sample 7500 rows from the filtered data if available
     if len(df_filtered) > 7500:
         df_filtered = df_filtered.sample(n=7500, random_state=42)
