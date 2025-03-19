@@ -21,45 +21,65 @@ green_test_df = pd.read_parquet(green_test_path)
 yellow_test_df = pd.read_parquet(yellow_test_path)
 
 # Define feature sets for test data using the same columns as the training data
-X_green_test_full = np.nan_to_num(green_test_df[['fare_amount', 'trip_distance', 'payment_type', 'passenger_count',
-                                                 'PULocationID', 'DOLocationID', 'RatecodeID', 'congestion_surcharge',
-                                                 'tolls_amount']].values)
-X_yellow_test_full = np.nan_to_num(yellow_test_df[['fare_amount', 'trip_distance', 'payment_type', 'passenger_count',
-                                                   'PULocationID', 'DOLocationID', 'RatecodeID', 'congestion_surcharge',
-                                                   'tolls_amount']].values)
 
-X_fare_trip_green_test = np.nan_to_num(green_test_df[['fare_amount', 'trip_distance', 'tolls_amount']].values)
-X_fare_trip_yellow_test = np.nan_to_num(yellow_test_df[['fare_amount', 'trip_distance', 'tolls_amount']].values)
+# --- "old" feature set: without time-related columns ---
+X_green_test_old = np.nan_to_num(green_test_df[[
+    'fare_amount', 'trip_distance', 'payment_type', 'passenger_count',
+    'PULocationID', 'DOLocationID', 'RatecodeID', 'congestion_surcharge',
+    'tolls_amount'
+]].values)
+X_yellow_test_old = np.nan_to_num(yellow_test_df[[
+    'fare_amount', 'trip_distance', 'payment_type', 'passenger_count',
+    'PULocationID', 'DOLocationID', 'RatecodeID', 'congestion_surcharge',
+    'tolls_amount'
+]].values)
 
-X_payment_passenger_green_test = np.nan_to_num(green_test_df[['payment_type', 'passenger_count']].values)
-X_payment_passenger_yellow_test = np.nan_to_num(yellow_test_df[['payment_type', 'passenger_count']].values)
+# Updated "full" feature set includes time-related columns
+X_green_test_full = np.nan_to_num(green_test_df[[
+    'fare_amount', 'trip_distance', 'payment_type', 'passenger_count',
+    'PULocationID', 'DOLocationID', 'RatecodeID', 'congestion_surcharge',
+    'tolls_amount', 'pickup_hour', 'dropoff_hour', 'pickup_dayofweek'
+]].values)
+X_yellow_test_full = np.nan_to_num(yellow_test_df[[
+    'fare_amount', 'trip_distance', 'payment_type', 'passenger_count',
+    'PULocationID', 'DOLocationID', 'RatecodeID', 'congestion_surcharge',
+    'tolls_amount', 'pickup_hour', 'dropoff_hour', 'pickup_dayofweek'
+]].values)
 
-X_location_green_test = np.nan_to_num(green_test_df[['PULocationID', 'DOLocationID']].values)
-X_location_yellow_test = np.nan_to_num(yellow_test_df[['PULocationID', 'DOLocationID']].values)
+# No location feature set (unchanged)
+X_no_location_green_test = np.nan_to_num(green_test_df[[
+    'fare_amount', 'trip_distance', 'payment_type', 'passenger_count',
+    'RatecodeID', 'congestion_surcharge', 'tolls_amount'
+]].values)
+X_no_location_yellow_test = np.nan_to_num(yellow_test_df[[
+    'fare_amount', 'trip_distance', 'payment_type', 'passenger_count',
+    'RatecodeID', 'congestion_surcharge', 'tolls_amount'
+]].values)
 
-X_no_location_green_test = np.nan_to_num(green_test_df[['fare_amount', 'trip_distance', 'payment_type',
-                                                         'passenger_count', 'RatecodeID', 'congestion_surcharge',
-                                                         'tolls_amount']].values)
-X_no_location_yellow_test = np.nan_to_num(yellow_test_df[['fare_amount', 'trip_distance', 'payment_type',
-                                                           'passenger_count', 'RatecodeID', 'congestion_surcharge',
-                                                           'tolls_amount']].values)
-
+# Minimal feature set (unchanged)
 X_minimal_green_test = np.nan_to_num(green_test_df[['fare_amount', 'trip_distance']].values)
 X_minimal_yellow_test = np.nan_to_num(yellow_test_df[['fare_amount', 'trip_distance']].values)
 
+# New time_features set (only time-related columns)
+X_time_green_test = np.nan_to_num(green_test_df[[
+    'pickup_hour', 'dropoff_hour', 'pickup_dayofweek'
+]].values)
+X_time_yellow_test = np.nan_to_num(yellow_test_df[[
+    'pickup_hour', 'dropoff_hour', 'pickup_dayofweek'
+]].values)
+
+# Define the test feature sets dictionary with the new "old" set added
 feature_sets_test = {
+    "old": (X_green_test_old, X_yellow_test_old),
     "full": (X_green_test_full, X_yellow_test_full),
-    "fare_trip": (X_fare_trip_green_test, X_fare_trip_yellow_test),
-    "payment_passenger": (X_payment_passenger_green_test, X_payment_passenger_yellow_test),
-    "location": (X_location_green_test, X_location_yellow_test),
     "no_location": (X_no_location_green_test, X_no_location_yellow_test),
     "minimal": (X_minimal_green_test, X_minimal_yellow_test),
+    "time_features": (X_time_green_test, X_time_yellow_test)
 }
 
 # === Select a Feature Set for Evaluation ===
-# To switch datasets, simply change the value of selected_feature_set below to one of the following options:
-# "full", "fare_trip", "payment_passenger", "location", "no_location", "minimal"
-selected_feature_set = "full"  # Change this value as needed
+# Options: "old", "full", "no_location", "minimal", "time_features"
+selected_feature_set = "old"  # Change this value as needed
 
 # Automatically set the test feature arrays based on the selected feature set
 X_test_green = feature_sets_test[selected_feature_set][0]
@@ -68,7 +88,6 @@ X_test_yellow = feature_sets_test[selected_feature_set][1]
 print(f"Selected feature set for evaluation: {selected_feature_set}")
 
 y_test_green = np.nan_to_num(green_test_df['tip_amount'].values)
-
 y_test_yellow = np.nan_to_num(yellow_test_df['tip_amount'].values)
 
 # %% 2. LOAD TRAINED NETWORKS (MODELS)
@@ -119,7 +138,6 @@ residuals_green = y_test_green - y_pred_green
 residuals_yellow = y_test_yellow - y_pred_yellow
 
 # Define a function to compute a mask for outliers using the IQR method 
-# --> Only applied to the plot and not to the resulting MAE, R^2, RMSE values...
 def get_outlier_mask(residuals):
     q1 = np.percentile(residuals, 15)
     q3 = np.percentile(residuals, 85)
@@ -143,13 +161,11 @@ residuals_yellow_filtered = residuals_yellow[mask_yellow]
 
 # Further filter out negative values (since tip values cannot be negative)
 mask_green_nonnegative = (y_test_green_filtered >= 0) & (y_pred_green_filtered >= 0)
-
 y_test_green_filtered = y_test_green_filtered[mask_green_nonnegative]
 y_pred_green_filtered = y_pred_green_filtered[mask_green_nonnegative]
 residuals_green_filtered = residuals_green_filtered[mask_green_nonnegative]
 
 mask_yellow_nonnegative = (y_test_yellow_filtered >= 0) & (y_pred_yellow_filtered >= 0)
-
 y_test_yellow_filtered = y_test_yellow_filtered[mask_yellow_nonnegative]
 y_pred_yellow_filtered = y_pred_yellow_filtered[mask_yellow_nonnegative]
 residuals_yellow_filtered = residuals_yellow_filtered[mask_yellow_nonnegative]
@@ -159,7 +175,6 @@ plt.figure(figsize=(12, 5))
 plt.subplot(1, 2, 1)
 plt.scatter(y_test_green_filtered, y_pred_green_filtered, alpha=0.5, color='green', label='Green Taxis')
 plt.scatter(y_test_yellow_filtered, y_pred_yellow_filtered, alpha=0.5, color='gold', label='Yellow Taxis')
-# Determine combined min and max for the diagonal line from filtered data
 combined_min = min(y_test_green_filtered.min(), y_test_yellow_filtered.min())
 combined_max = max(y_test_green_filtered.max(), y_test_yellow_filtered.max())
 plt.plot([combined_min, combined_max], [combined_min, combined_max], 'k--', lw=2)
@@ -170,13 +185,9 @@ plt.legend()
 
 # Add a single text annotation for both green and yellow metrics
 metrics_text = (
-    f"Green Taxi:\n"
-    f"RMSE: {rmse_green:.2f}\nR²: {r2_green:.2f}\nMAE: {mae_green:.2f}\n\n"
-    f"Yellow Taxi:\n"
-    f"RMSE: {rmse_yellow:.2f}\nR²: {r2_yellow:.2f}\nMAE: {mae_yellow:.2f}"
+    f"Green Taxi:\nRMSE: {rmse_green:.2f}\nR²: {r2_green:.2f}\nMAE: {mae_green:.2f}\n\n"
+    f"Yellow Taxi:\nRMSE: {rmse_yellow:.2f}\nR²: {r2_yellow:.2f}\nMAE: {mae_yellow:.2f}"
 )
-
-# Place both metrics in one box in the upper left
 plt.gca().text(0.02, 0.98, metrics_text, transform=plt.gca().transAxes, fontsize=10,
                verticalalignment='top', color='black', bbox=dict(boxstyle='round', facecolor='white', alpha=0.5))
 
@@ -197,19 +208,14 @@ from sklearn.inspection import permutation_importance
 
 # Define a dictionary to map each feature set to its corresponding column names
 feature_names_dict = {
+    'old': [
+        'Fare Amount', 'Trip Distance', 'Payment Type', 'Passenger Count',
+        'Pick Up Location', 'Drop Off Location', 'Ratecode-ID', 'Surcharges', 'Tolls Amount'
+    ],
     'full': [
         'Fare Amount', 'Trip Distance', 'Payment Type', 'Passenger Count',
         'Pick Up Location', 'Drop Off Location', 'Ratecode-ID', 'Surcharges',
-        'Tolls Amount'
-    ],
-    'fare_trip': [
-        'Fare Amount', 'Trip Distance', 'Tolls Amount'
-    ],
-    'payment_passenger': [
-        'Payment Type', 'Passenger Count'
-    ],
-    'location': [
-        'Pick Up Location', 'Drop Off Location'
+        'Tolls Amount', 'Pickup Hour', 'Dropoff Hour', 'Pickup Day of Week'
     ],
     'no_location': [
         'Fare Amount', 'Trip Distance', 'Payment Type', 'Passenger Count',
@@ -217,6 +223,9 @@ feature_names_dict = {
     ],
     'minimal': [
         'Fare Amount', 'Trip Distance'
+    ],
+    'time_features': [
+        'Pickup Hour', 'Dropoff Hour', 'Pickup Day of Week'
     ]
 }
 
@@ -247,21 +256,17 @@ importances_yellow = results_yellow.importances_mean
 stds_yellow = results_yellow.importances_std
 
 # --- Plot Grouped Bar Chart for Comparison in Sorted Order ---
-# Compute average importance to determine the sorting order
 avg_importances = (importances_green + importances_yellow) / 2
 sorted_idx = np.argsort(avg_importances)[::-1]  # descending order
 
-# Sort the importances, standard deviations, and feature names accordingly
 importances_green_sorted = importances_green[sorted_idx]
 importances_yellow_sorted = importances_yellow[sorted_idx]
 feature_names_sorted = [chosen_feature_names[i] for i in sorted_idx]
 
 indices = np.arange(len(chosen_feature_names))
-width = 0.35  # width of the bars
+width = 0.35
 
 plt.figure(figsize=(10, 6))
-
-# Remove 'yerr' and 'capsize' to eliminate error bars
 plt.bar(indices - width/2, importances_green_sorted, width,
         label='Green Taxi', color='green', alpha=0.7)
 plt.bar(indices + width/2, importances_yellow_sorted, width,
@@ -269,7 +274,7 @@ plt.bar(indices + width/2, importances_yellow_sorted, width,
 
 plt.xticks(indices, feature_names_sorted, rotation=45, ha='right')
 plt.ylabel('Mean Importance Increase')
-plt.title(f'Permutation Importances Comparison')
+plt.title('Permutation Importances Comparison')
 plt.legend()
 plt.tight_layout()
 plt.show()
