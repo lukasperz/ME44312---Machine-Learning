@@ -59,7 +59,7 @@ feature_sets_test = {
 # === Select a Feature Set for Evaluation ===
 # To switch datasets, simply change the value of selected_feature_set below to one of the following options:
 # "full", "fare_trip", "payment_passenger", "location", "no_location", "minimal"
-selected_feature_set = "full"  # Change this value as needed
+selected_feature_set = "no_location"  # Change this value as needed
 
 # Automatically set the test feature arrays based on the selected feature set
 X_test_green = feature_sets_test[selected_feature_set][0]
