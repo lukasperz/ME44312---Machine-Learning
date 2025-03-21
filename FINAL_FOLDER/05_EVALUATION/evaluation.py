@@ -79,7 +79,7 @@ feature_sets_test = {
 
 # === Select a Feature Set for Evaluation ===
 # Options: "old", "full", "no_location", "minimal", "time_features"
-selected_feature_set = "full"  
+selected_feature_set = "time_features"  
 
 # Automatically set the test feature arrays based on the selected feature set
 X_test_green = feature_sets_test[selected_feature_set][0]
