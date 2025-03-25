@@ -2,6 +2,7 @@ import pandas as pd
 import geopandas as gpd
 import folium
 import os
+from shapely.lib import length
 
 # === 1️⃣ Load the Parquet Files ===
 main_folder_path = os.path.abspath(os.path.join(os.getcwd(), '..'))
